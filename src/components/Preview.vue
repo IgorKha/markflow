@@ -1,0 +1,115 @@
+<template>
+  <div
+    ref="previewEl"
+    class="preview-container markdown-body"
+    v-html="renderedHtml"
+  ></div>
+</template>
+
+<script setup>
+import { ref, watch, nextTick } from "vue";
+import { renderMarkdown } from "../utils/markdown.js";
+import mermaid from "mermaid";
+
+// CSS imports
+import "katex/dist/katex.min.css";
+import "highlight.js/styles/github.css";
+import "github-markdown-css/github-markdown.css";
+
+const props = defineProps({
+  markdown: {
+    type: String,
+    default: "",
+  },
+  theme: {
+    type: String,
+    default: "light",
+  },
+});
+
+const previewEl = ref(null);
+const renderedHtml = ref("");
+
+mermaid.initialize({
+  startOnLoad: false,
+  theme: "default",
+});
+
+watch(
+  () => props.theme,
+  (newTheme) => {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: newTheme === "dark" ? "dark" : "default",
+    });
+    renderAndHighlight();
+  },
+);
+
+watch(
+  () => props.markdown,
+  () => renderAndHighlight(),
+  { immediate: true },
+);
+
+async function renderAndHighlight() {
+  renderedHtml.value = await renderMarkdown(props.markdown);
+
+  await nextTick();
+
+  if (!previewEl.value) return;
+
+  // Process Mermaid diagrams — rehype-highlight wraps them in
+  // <code class="language-mermaid">, so we look for that.
+  const mermaidBlocks = previewEl.value.querySelectorAll(
+    "code.language-mermaid",
+  );
+  for (const block of mermaidBlocks) {
+    const pre = block.parentElement;
+    const definition = block.textContent;
+    const id = `mermaid-${Math.random().toString(36).slice(2)}`;
+
+    try {
+      const { svg } = await mermaid.render(id, definition);
+      const container = document.createElement("div");
+      container.className = "mermaid-diagram";
+      container.innerHTML = svg;
+      pre.replaceWith(container);
+    } catch (err) {
+      // Leave original block on render failure
+      console.warn("Mermaid render error:", err);
+    }
+  }
+}
+
+defineExpose({ previewEl });
+</script>
+
+<style scoped>
+.preview-container {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 24px 32px;
+  box-sizing: border-box;
+  background: var(--preview-bg);
+  color: var(--text);
+}
+
+:deep(.mermaid-diagram) {
+  display: flex;
+  justify-content: center;
+  margin: 1.5em 0;
+}
+
+:deep(.mermaid-diagram svg) {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Override github-markdown-css background to use our theme variable */
+:deep(.markdown-body) {
+  background: transparent;
+  color: var(--text);
+}
+</style>
