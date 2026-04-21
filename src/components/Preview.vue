@@ -1,8 +1,11 @@
 <template>
-  <div ref="previewContainer" class="preview-container">
+  <div
+    ref="previewContainer"
+    class="w-full h-full overflow-y-auto px-4 py-6 sm:px-10 sm:py-12 markdown-body text-fg justify-center flex"
+  >
     <div
       ref="previewEl"
-      class="preview-content markdown-body"
+      class="preview-content max-w-198.5 mx-auto bg-transparent text-fg markdown-body"
       v-html="renderedHtml"
     ></div>
   </div>
@@ -114,7 +117,8 @@ async function renderAndHighlight() {
       if (currentToken !== renderToken) return;
 
       const container = document.createElement("div");
-      container.className = "mermaid-diagram";
+      container.className =
+        "flex justify-center my-6 [&_svg]:max-w-full [&_svg]:h-auto";
       container.innerHTML = svg;
       if (pre?.isConnected) {
         pre.replaceWith(container);
@@ -174,33 +178,3 @@ defineExpose({
   onScrollChange,
 });
 </script>
-
-<style scoped>
-.preview-container {
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  padding: 48px 40px;
-  box-sizing: border-box;
-  background: var(--preview-bg);
-  color: var(--text);
-}
-
-.preview-content {
-  max-width: 794px; /* A4 width at 96 dpi */
-  margin: 0 auto;
-  background: transparent;
-  color: var(--text);
-}
-
-:deep(.mermaid-diagram) {
-  display: flex;
-  justify-content: center;
-  margin: 1.5em 0;
-}
-
-:deep(.mermaid-diagram svg) {
-  max-width: 100%;
-  height: auto;
-}
-</style>

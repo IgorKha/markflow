@@ -1,5 +1,11 @@
 <template>
-  <div class="app" :data-theme="theme">
+  <a
+    class="absolute translate-y-[-200%] left-4 top-4 z-9999 px-3.5 py-1.5 rounded-md bg-accent text-accent-fg text-sm font-semibold no-underline transition-transform duration-150 focus:translate-y-0 focus:outline-2 focus:outline-accent-fg focus:outline-offset-2"
+    href="#main-content"
+    >Skip to main content</a
+  >
+
+  <div class="flex flex-col h-screen bg-canvas text-fg" :data-theme="theme">
     <Toolbar
       :theme="theme"
       :view-mode="viewMode"
@@ -15,12 +21,30 @@
       @share="onShare"
     />
 
-    <main class="workspace">
-      <div v-if="viewMode !== 'preview'" class="pane pane--editor">
+    <main
+      id="main-content"
+      class="flex flex-1 overflow-hidden flex-col sm:flex-row"
+    >
+      <div
+        v-if="viewMode !== 'preview'"
+        class="flex-1 overflow-hidden min-w-0 min-h-0"
+        role="region"
+        aria-label="Markdown editor"
+      >
         <Editor ref="editorRef" v-model="markdownSource" :theme="theme" />
       </div>
-      <div v-if="viewMode === 'split'" class="pane-divider" />
-      <div v-if="viewMode !== 'editor'" class="pane pane--preview">
+      <div
+        v-if="viewMode === 'split'"
+        class="h-px w-full sm:h-auto sm:w-px bg-border shrink-0"
+        role="separator"
+        aria-hidden="true"
+      />
+      <div
+        v-if="viewMode !== 'editor'"
+        class="flex-1 overflow-hidden min-w-0 min-h-0"
+        role="region"
+        aria-label="Markdown preview"
+      >
         <Preview ref="previewRef" :markdown="markdownSource" :theme="theme" />
       </div>
     </main>
@@ -242,31 +266,3 @@ async function onExportHtml() {
   await exportHTML(el.innerHTML, "markflow-export");
 }
 </script>
-
-<style>
-.app {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background: var(--bg);
-  color: var(--text);
-}
-
-.workspace {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-.pane {
-  flex: 1;
-  overflow: hidden;
-  min-width: 0;
-}
-
-.pane-divider {
-  width: 1px;
-  background: var(--border);
-  flex-shrink: 0;
-}
-</style>

@@ -1,5 +1,5 @@
 <template>
-  <div ref="editorContainer" class="editor-container"></div>
+  <div ref="editorContainer" class="w-full h-full"></div>
 </template>
 
 <script setup>
@@ -111,10 +111,3 @@ defineExpose({
   onScrollChange,
 });
 </script>
-
-<style scoped>
-.editor-container {
-  width: 100%;
-  height: 100%;
-}
-</style>
