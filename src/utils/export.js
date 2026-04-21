@@ -1,100 +1,73 @@
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
-
 /**
- * Export the preview element as a PDF file.
- * Uses html2canvas to render the DOM to a canvas, then embeds it in jsPDF.
+ * Export the preview element as a PDF file with selectable text.
+ * Opens a styled print window and triggers the browser's native print dialog,
+ * which allows saving as PDF with real, searchable, copy-able text.
  * @param {HTMLElement} el  - The preview container element
- * @param {string} filename - Output filename (without extension)
+ * @param {string} filename - Output filename (used as window title)
  */
 export async function exportPDF(el, filename = "document") {
-  // Clone the element so we can remove scroll/height constraints and capture
-  // the full document content — not just what's visible in the viewport.
-  const clone = el.cloneNode(true);
-  const bg = getComputedStyle(el).backgroundColor || "#ffffff";
+  // Collect inline <style> blocks already present in the document
+  const inlineStyles = Array.from(document.querySelectorAll("style"))
+    .map((s) => s.outerHTML)
+    .join("\n");
 
-  Object.assign(clone.style, {
-    position: "fixed",
-    top: "0",
-    left: "-9999px",
-    width: el.offsetWidth + "px",
-    height: "auto",
-    maxHeight: "none",
-    overflow: "visible",
-    backgroundColor: bg,
-    zIndex: "-1",
-  });
+  // Fetch and inline all external stylesheets so the print window is self-contained
+  const linkNodes = Array.from(
+    document.querySelectorAll('link[rel="stylesheet"]'),
+  );
+  const fetchedStyles = await Promise.all(
+    linkNodes.map(async (link) => {
+      try {
+        const res = await fetch(link.href);
+        const css = await res.text();
+        return `<style>${css}</style>`;
+      } catch {
+        return "";
+      }
+    }),
+  );
+  const linkedStyles = fetchedStyles.join("\n");
 
-  document.body.appendChild(clone);
+  const doc = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${filename}</title>
+  ${inlineStyles}
+  ${linkedStyles}
+  <style>
+    body {
+      max-width: 860px;
+      margin: 40px auto;
+      padding: 0 24px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #24292e;
+      background: #ffffff;
+    }
+    pre { white-space: pre-wrap; word-break: break-word; }
+    img, svg { max-width: 100%; height: auto; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    @media print {
+      body { margin: 0; padding: 16px 24px; }
+    }
+  </style>
+</head>
+<body class="markdown-body">
+${el.innerHTML}
+<script>window.onload = function () { window.focus(); window.print(); }<\/script>
+</body>
+</html>`;
 
-  // Wait one tick for layout to settle
-  await new Promise((r) => requestAnimationFrame(r));
-
-  let canvas;
-  try {
-    canvas = await html2canvas(clone, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: bg,
-      width: clone.offsetWidth,
-      height: clone.scrollHeight,
-      windowWidth: clone.offsetWidth,
-      windowHeight: clone.scrollHeight,
-    });
-  } finally {
-    document.body.removeChild(clone);
+  const printWindow = window.open("", "_blank", "width=900,height=700");
+  if (!printWindow) {
+    alert("Please allow pop-ups in your browser to export PDF.");
+    return;
   }
-
-  const imgData = canvas.toDataURL("image/png");
-  const pageW = 210; // A4 mm width
-  const pageH = 297; // A4 mm height
-  const margin = 10;
-
-  const usableW = pageW - margin * 2;
-  const usableH = pageH - margin * 2;
-
-  // px → mm ratio based on canvas width
-  const pxToMm = usableW / canvas.width;
-  const imgHeightMm = canvas.height * pxToMm;
-
-  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-
-  let remainingHeight = imgHeightMm;
-  let offsetY = 0;
-
-  while (remainingHeight > 0) {
-    if (offsetY > 0) pdf.addPage();
-
-    const sliceH = Math.min(usableH, remainingHeight);
-    const sourceY = (offsetY / imgHeightMm) * canvas.height;
-    const sourceH = (sliceH / imgHeightMm) * canvas.height;
-
-    // Create a slice canvas for this page
-    const pageCanvas = document.createElement("canvas");
-    pageCanvas.width = canvas.width;
-    pageCanvas.height = sourceH;
-    const ctx = pageCanvas.getContext("2d");
-    ctx.drawImage(
-      canvas,
-      0,
-      sourceY,
-      canvas.width,
-      sourceH,
-      0,
-      0,
-      canvas.width,
-      sourceH,
-    );
-
-    const pageImg = pageCanvas.toDataURL("image/png");
-    pdf.addImage(pageImg, "PNG", margin, margin, usableW, sliceH);
-
-    offsetY += usableH;
-    remainingHeight -= usableH;
-  }
-
-  pdf.save(`${filename}.pdf`);
+  printWindow.document.open();
+  printWindow.document.write(doc);
+  printWindow.document.close();
 }
 
 /**
