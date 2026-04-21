@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
+
 *,
 *::before,
 *::after {
@@ -11,33 +13,53 @@ body,
 #app {
   height: 100%;
   font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    "Inter",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Helvetica,
+    Arial,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 :root,
 [data-theme="light"] {
-  --bg: #f6f8fa;
+  --bg: #f4f4f5;
+  --surface: #ffffff;
   --preview-bg: #ffffff;
   --toolbar-bg: #ffffff;
-  --text: #24292e;
-  --border: #d0d7de;
-  --btn-bg: #f6f8fa;
-  --btn-hover-bg: #e9ecef;
+  --text: #18181b;
+  --text-muted: #71717a;
+  --border: #e4e4e7;
+  --btn-bg: transparent;
+  --btn-hover-bg: #f4f4f5;
+  --accent: #0d6efd;
+  --accent-hover: #0b5ed7;
+  --accent-text: #ffffff;
 }
 
 [data-theme="dark"] {
-  --bg: #0d1117;
-  --preview-bg: #0d1117;
-  --toolbar-bg: #161b22;
-  --text: #c9d1d9;
-  --border: #30363d;
-  --btn-bg: #21262d;
-  --btn-hover-bg: #30363d;
+  --bg: #09090b;
+  --surface: #111113;
+  --preview-bg: #111113;
+  --toolbar-bg: #111113;
+  --text: #e4e4e7;
+  --text-muted: #71717a;
+  --border: #27272a;
+  --btn-bg: transparent;
+  --btn-hover-bg: #27272a;
+  --accent: #94a3b8;
+  --accent-hover: #cbd5e1;
+  --accent-text: #0f172a;
 }
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -46,5 +68,9 @@ body,
 
 ::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 4px;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }

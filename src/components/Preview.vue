@@ -180,7 +180,7 @@ defineExpose({
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  padding: 40px 32px;
+  padding: 48px 40px;
   box-sizing: border-box;
   background: var(--preview-bg);
   color: var(--text);
