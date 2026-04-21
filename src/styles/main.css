@@ -1,4 +1,3 @@
-/* ── Reset & base ────────────────────────────────────────────────────────── */
 *,
 *::before,
 *::after {
@@ -15,7 +14,6 @@ body,
     -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
 
-/* ── Light theme (default) ───────────────────────────────────────────────── */
 :root,
 [data-theme="light"] {
   --bg: #f6f8fa;
@@ -27,7 +25,6 @@ body,
   --btn-hover-bg: #e9ecef;
 }
 
-/* ── Dark theme ──────────────────────────────────────────────────────────── */
 [data-theme="dark"] {
   --bg: #0d1117;
   --preview-bg: #0d1117;
@@ -38,13 +35,6 @@ body,
   --btn-hover-bg: #30363d;
 }
 
-/* ── Highlight.js dark override for dark theme ───────────────────────────── */
-[data-theme="dark"] .hljs {
-  background: #161b22;
-  color: #c9d1d9;
-}
-
-/* ── Scrollbar styling ───────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

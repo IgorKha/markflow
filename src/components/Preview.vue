@@ -7,14 +7,16 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from "vue";
+import { ref, watch, nextTick, onMounted } from "vue";
 import { renderMarkdown } from "../utils/markdown.js";
 import mermaid from "mermaid";
 
-// CSS imports
 import "katex/dist/katex.min.css";
-import "highlight.js/styles/github.css";
-import "github-markdown-css/github-markdown.css";
+
+import hljsLightCss from "highlight.js/styles/github.css?inline";
+import hljsDarkCss from "highlight.js/styles/github-dark.css?inline";
+import mdLightCss from "github-markdown-css/github-markdown-light.css?inline";
+import mdDarkCss from "github-markdown-css/github-markdown-dark.css?inline";
 
 const props = defineProps({
   markdown: {
@@ -30,6 +32,23 @@ const props = defineProps({
 const previewEl = ref(null);
 const renderedHtml = ref("");
 
+function setStyleContent(id, lightCss, darkCss) {
+  let style = document.getElementById(id);
+  if (!style) {
+    style = document.createElement("style");
+    style.id = id;
+    document.head.appendChild(style);
+  }
+  style.textContent = props.theme === "dark" ? darkCss : lightCss;
+}
+
+function applyThemeStylesheets() {
+  setStyleContent("hljs-theme", hljsLightCss, hljsDarkCss);
+  setStyleContent("markdown-theme", mdLightCss, mdDarkCss);
+}
+
+applyThemeStylesheets();
+
 mermaid.initialize({
   startOnLoad: false,
   theme: "default",
@@ -38,6 +57,7 @@ mermaid.initialize({
 watch(
   () => props.theme,
   (newTheme) => {
+    applyThemeStylesheets();
     mermaid.initialize({
       startOnLoad: false,
       theme: newTheme === "dark" ? "dark" : "default",
@@ -53,14 +73,18 @@ watch(
 );
 
 async function renderAndHighlight() {
-  renderedHtml.value = await renderMarkdown(props.markdown);
+  const html = await renderMarkdown(props.markdown);
 
+  if (renderedHtml.value === html) {
+    renderedHtml.value = "";
+    await nextTick();
+  }
+
+  renderedHtml.value = html;
   await nextTick();
 
   if (!previewEl.value) return;
 
-  // Process Mermaid diagrams — rehype-highlight wraps them in
-  // <code class="language-mermaid">, so we look for that.
   const mermaidBlocks = previewEl.value.querySelectorAll(
     "code.language-mermaid",
   );
@@ -76,7 +100,6 @@ async function renderAndHighlight() {
       container.innerHTML = svg;
       pre.replaceWith(container);
     } catch (err) {
-      // Leave original block on render failure
       console.warn("Mermaid render error:", err);
     }
   }
@@ -107,7 +130,6 @@ defineExpose({ previewEl });
   height: auto;
 }
 
-/* Override github-markdown-css background to use our theme variable */
 :deep(.markdown-body) {
   background: transparent;
   color: var(--text);
