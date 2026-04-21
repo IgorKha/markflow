@@ -2,18 +2,20 @@
   <div class="app" :data-theme="theme">
     <Toolbar
       :theme="theme"
+      :view-mode="viewMode"
       @toggle-theme="toggleTheme"
+      @change-view-mode="viewMode = $event"
       @export-md="onExportMd"
       @export-html="onExportHtml"
       @export-pdf="onExportPdf"
     />
 
     <main class="workspace">
-      <div class="pane pane--editor">
+      <div v-if="viewMode !== 'preview'" class="pane pane--editor">
         <Editor v-model="markdownSource" :theme="theme" />
       </div>
-      <div class="pane-divider" />
-      <div class="pane pane--preview">
+      <div v-if="viewMode === 'split'" class="pane-divider" />
+      <div v-if="viewMode !== 'editor'" class="pane pane--preview">
         <Preview ref="previewRef" :markdown="markdownSource" :theme="theme" />
       </div>
     </main>
@@ -27,7 +29,8 @@ import Editor from "./components/Editor.vue";
 import Preview from "./components/Preview.vue";
 import { exportPDF, exportHTML, exportMarkdown } from "./utils/export.js";
 
-// ── Theme ────────────────────────────────────────────────────────────────────
+const viewMode = ref("split");
+
 const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 const theme = ref(prefersDark ? "dark" : "light");
 

@@ -1,9 +1,11 @@
 <template>
-  <div
-    ref="previewEl"
-    class="preview-container markdown-body"
-    v-html="renderedHtml"
-  ></div>
+  <div class="preview-container">
+    <div
+      ref="previewEl"
+      class="preview-content markdown-body"
+      v-html="renderedHtml"
+    ></div>
+  </div>
 </template>
 
 <script setup>
@@ -113,9 +115,16 @@ defineExpose({ previewEl });
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  padding: 24px 32px;
+  padding: 40px 32px;
   box-sizing: border-box;
   background: var(--preview-bg);
+  color: var(--text);
+}
+
+.preview-content {
+  max-width: 794px; /* A4 width at 96 dpi */
+  margin: 0 auto;
+  background: transparent;
   color: var(--text);
 }
 
@@ -128,10 +137,5 @@ defineExpose({ previewEl });
 :deep(.mermaid-diagram svg) {
   max-width: 100%;
   height: auto;
-}
-
-:deep(.markdown-body) {
-  background: transparent;
-  color: var(--text);
 }
 </style>
