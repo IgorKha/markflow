@@ -92,13 +92,11 @@ const markdownSource = ref(
   localStorage.getItem(STORAGE_KEY) ?? DEFAULT_CONTENT,
 );
 
-// Persist to localStorage on every change
 import { watch } from "vue";
 watch(markdownSource, (val) => {
   localStorage.setItem(STORAGE_KEY, val);
 });
 
-// ── Exports ──────────────────────────────────────────────────────────────────
 const previewRef = ref(null);
 
 async function onExportPdf() {

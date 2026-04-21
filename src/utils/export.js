@@ -6,12 +6,10 @@
  * @param {string} filename - Output filename (used as window title)
  */
 export async function exportPDF(el, filename = "document") {
-  // Collect inline <style> blocks already present in the document
   const inlineStyles = Array.from(document.querySelectorAll("style"))
     .map((s) => s.outerHTML)
     .join("\n");
 
-  // Fetch and inline all external stylesheets so the print window is self-contained
   const linkNodes = Array.from(
     document.querySelectorAll('link[rel="stylesheet"]'),
   );
@@ -77,11 +75,9 @@ ${el.innerHTML}
  * @param {string} filename     - Output filename (without extension)
  */
 export async function exportHTML(htmlContent, filename = "document") {
-  // Collect all <style> tags already present in the document
   const styleNodes = Array.from(document.querySelectorAll("style"));
   const inlineStyles = styleNodes.map((s) => s.outerHTML).join("\n");
 
-  // Fetch and inline all <link rel="stylesheet"> so the file is self-contained
   const linkNodes = Array.from(
     document.querySelectorAll('link[rel="stylesheet"]'),
   );

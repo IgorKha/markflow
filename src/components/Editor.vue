@@ -24,7 +24,6 @@ let editor = null;
 let monaco = null;
 
 onMounted(async () => {
-  // Load Monaco from CDN — avoids bundling ~10 MB
   loader.config({
     paths: { vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs" },
   });
