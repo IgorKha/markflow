@@ -3,11 +3,13 @@
     <Toolbar
       :theme="theme"
       :view-mode="viewMode"
+      :share-copied="shareCopied"
       @toggle-theme="toggleTheme"
       @change-view-mode="viewMode = $event"
       @export-md="onExportMd"
       @export-html="onExportHtml"
       @export-pdf="onExportPdf"
+      @share="onShare"
     />
 
     <main class="workspace">
@@ -23,11 +25,12 @@
 </template>
 
 <script setup>
-import { ref, defineAsyncComponent } from "vue";
+import { ref, defineAsyncComponent, onMounted } from "vue";
 import Toolbar from "./components/Toolbar.vue";
 const Editor = defineAsyncComponent(() => import("./components/Editor.vue"));
 const Preview = defineAsyncComponent(() => import("./components/Preview.vue"));
 import { exportPDF, exportHTML, exportMarkdown } from "./utils/export.js";
+import { buildShareUrl, readSharedContent } from "./utils/share.js";
 
 const viewMode = ref("split");
 
@@ -116,6 +119,25 @@ import { watch } from "vue";
 watch(markdownSource, (val) => {
   localStorage.setItem(STORAGE_KEY, val);
 });
+
+onMounted(async () => {
+  const shared = await readSharedContent();
+  if (shared !== null) {
+    markdownSource.value = shared;
+    history.replaceState(null, "", location.pathname);
+  }
+});
+
+const shareCopied = ref(false);
+
+async function onShare() {
+  const url = await buildShareUrl(markdownSource.value);
+  await navigator.clipboard.writeText(url);
+  shareCopied.value = true;
+  setTimeout(() => {
+    shareCopied.value = false;
+  }, 2000);
+}
 
 const previewRef = ref(null);
 

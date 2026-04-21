@@ -83,6 +83,14 @@
       >
         ↓ PDF
       </button>
+
+      <button
+        class="btn btn--share"
+        title="Copy shareable link"
+        @click="emit('share')"
+      >
+        {{ shareCopied ? "✓ Copied!" : "⤴ Share" }}
+      </button>
     </div>
   </header>
 </template>
@@ -100,6 +108,10 @@ const props = defineProps({
     type: String,
     default: "split",
   },
+  shareCopied: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits([
@@ -108,6 +120,7 @@ const emit = defineEmits([
   "export-md",
   "export-html",
   "export-pdf",
+  "share",
 ]);
 
 const themeLabel =
@@ -227,5 +240,18 @@ const themeLabel =
   background: var(--btn-hover-bg);
   color: var(--text);
   font-weight: 700;
+}
+
+.btn--share {
+  background: var(--btn-bg);
+  border-color: var(--border);
+  min-width: 84px;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.btn--share:hover {
+  background: var(--btn-hover-bg);
 }
 </style>
