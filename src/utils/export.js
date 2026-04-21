@@ -103,10 +103,27 @@ export async function exportPDF(el, filename = "document") {
  * @param {string} htmlContent  - Inner HTML of the preview element
  * @param {string} filename     - Output filename (without extension)
  */
-export function exportHTML(htmlContent, filename = "document") {
-  // Collect all <style> and <link rel=stylesheet> content from the page
+export async function exportHTML(htmlContent, filename = "document") {
+  // Collect all <style> tags already present in the document
   const styleNodes = Array.from(document.querySelectorAll("style"));
   const inlineStyles = styleNodes.map((s) => s.outerHTML).join("\n");
+
+  // Fetch and inline all <link rel="stylesheet"> so the file is self-contained
+  const linkNodes = Array.from(
+    document.querySelectorAll('link[rel="stylesheet"]'),
+  );
+  const fetchedStyles = await Promise.all(
+    linkNodes.map(async (link) => {
+      try {
+        const res = await fetch(link.href);
+        const css = await res.text();
+        return `<style>${css}</style>`;
+      } catch {
+        return `<!-- could not inline stylesheet: ${link.href} -->`;
+      }
+    }),
+  );
+  const linkedStyles = fetchedStyles.join("\n");
 
   const doc = `<!DOCTYPE html>
 <html lang="en">
@@ -115,6 +132,7 @@ export function exportHTML(htmlContent, filename = "document") {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${filename}</title>
   ${inlineStyles}
+  ${linkedStyles}
   <style>
     body {
       max-width: 860px;

@@ -111,10 +111,10 @@ function onExportMd() {
   exportMarkdown(markdownSource.value, "markflow-export");
 }
 
-function onExportHtml() {
+async function onExportHtml() {
   const el = previewRef.value?.previewEl;
   if (!el) return;
-  exportHTML(el.innerHTML, "markflow-export");
+  await exportHTML(el.innerHTML, "markflow-export");
 }
 </script>
 
