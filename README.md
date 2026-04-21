@@ -1,64 +1,45 @@
 # MarkFlow
 
-MarkFlow — Online Markdown Editor with Mermaid diagrams and LaTeX support. Export to PDF, HTML, live preview, and clean UI.
+MarkFlow is a local Markdown editor with live preview, Mermaid/LaTeX support, and PDF/HTML export.
 
-## Features
+## Current Capabilities
 
-- **Live preview** — real-time rendered output as you type
-- **Mermaid diagrams** — render flowcharts, sequence diagrams, and more
-- **LaTeX math** — inline and block equations via KaTeX
-- **Syntax highlighting** — code blocks with highlight.js
-- **Export to PDF** — save your document as a PDF file
-- **Export to HTML** — export as a standalone HTML page
-- **Monaco editor** — VS Code-like editing experience
-- **GitHub Flavored Markdown** — tables, task lists, strikethrough, etc.
+- Three UI modes: `Editor`, `Split`, `Preview`.
+- Live preview powered by a `remark/rehype` pipeline.
+- Support for `GFM` (tables, task lists, etc.), `KaTeX`, `Mermaid`, and `highlight.js`.
+- GitHub-style Alerts such as `> [!NOTE]` and `> [!WARNING]`.
+- HTML sanitization via `DOMPurify` (including `svg` and `mathML`).
+- Synced scroll between editor and preview (only in `Split` mode).
+- Export to `MD`, `HTML`, and `PDF`.
+- Share link with content stored in hash URL (`deflate-raw` compression with uncompressed fallback).
+- Autosave to `localStorage`.
+- Light/Dark theme with system theme detection.
 
-## Tech Stack
-
-- [Vue 3](https://vuejs.org/)
-- [Vite](https://vitejs.dev/)
-- [Monaco Editor](https://microsoft.github.io/monaco-editor/)
-- [Mermaid](https://mermaid.js.org/)
-- [KaTeX](https://katex.org/)
-- [unified](https://unifiedjs.com/) (remark + rehype pipeline)
-
-## Getting Started
+## Quick Start
 
 ```bash
-# Install dependencies
 npm install
-
-# Start dev server
 npm run dev
+```
 
-# Build for production
+## Build
+
+```bash
 npm run build
+npm run preview
 ```
 
-## Usage
+## Docker
 
-1. Type Markdown in the left editor panel.
-2. See the rendered preview on the right in real time.
-3. Use the toolbar to export as **PDF** or **HTML**.
-
-### LaTeX example
-
-```
-Inline: $E = mc^2$
-
-Block:
-$$
-\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}
-$$
+```bash
+docker compose up --build -d
 ```
 
-### Mermaid example
+The app will be available at `http://localhost:8080`.
 
-````
-```mermaid
-graph TD
-  A[Start] --> B{Condition}
-  B -- Yes --> C[Do something]
-  B -- No --> D[Do nothing]
-```
-````
+## Important Caveats
+
+- There is no backend: all data stays in the user's browser.
+- Share links are not encrypted: content can be reconstructed from the URL.
+- Very long notes may exceed URL length limits in some browsers.
+- PDF export opens the system print dialog (popup permissions are required).
