@@ -1,0 +1,30 @@
+services:
+  markflow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+      args:
+        APP_VERSION: "${APP_VERSION:-0.1.0}"
+        VCS_REF: "${VCS_REF:-local}"
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - NET_BIND_SERVICE
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
