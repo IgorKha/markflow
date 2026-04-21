@@ -8,8 +8,8 @@ COPY . .
 RUN npm run build
 
 FROM nginx:1.29-alpine AS runtime
-ARG APP_VERSION=0.1.0
-ARG VCS_REF=local
+ARG APP_VERSION=0.0.0-dev
+ARG VCS_REF=local-dev
 LABEL org.opencontainers.image.title="markflow" \
   org.opencontainers.image.description="Online Markdown editor with Mermaid and LaTeX support" \
   org.opencontainers.image.authors="IgorKha https://github.com/IgorKha" \
