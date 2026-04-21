@@ -96,6 +96,8 @@
 </template>
 
 <script setup>
+import { computed } from "vue";
+
 const base = import.meta.env.BASE_URL;
 const version = __APP_VERSION__;
 
@@ -123,8 +125,9 @@ const emit = defineEmits([
   "share",
 ]);
 
-const themeLabel =
-  props.theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
+const themeLabel = computed(() =>
+  props.theme === "dark" ? "Switch to light mode" : "Switch to dark mode",
+);
 </script>
 
 <style scoped>

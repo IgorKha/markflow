@@ -130,13 +130,51 @@ onMounted(async () => {
 
 const shareCopied = ref(false);
 
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fallback to legacy copy path below.
+    }
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } catch {
+    copied = false;
+  }
+
+  document.body.removeChild(textarea);
+  return copied;
+}
+
 async function onShare() {
-  const url = await buildShareUrl(markdownSource.value);
-  await navigator.clipboard.writeText(url);
-  shareCopied.value = true;
-  setTimeout(() => {
-    shareCopied.value = false;
-  }, 2000);
+  try {
+    const url = await buildShareUrl(markdownSource.value);
+    const copied = await copyText(url);
+    if (!copied) {
+      window.prompt("Copy this link:", url);
+      return;
+    }
+
+    shareCopied.value = true;
+    setTimeout(() => {
+      shareCopied.value = false;
+    }, 2000);
+  } catch (err) {
+    console.warn("Share failed:", err);
+  }
 }
 
 const previewRef = ref(null);

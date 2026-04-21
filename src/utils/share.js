@@ -1,5 +1,12 @@
 const HASH_PREFIX = "s=";
 
+function supportsCompressionStreams() {
+  return (
+    typeof CompressionStream !== "undefined" &&
+    typeof DecompressionStream !== "undefined"
+  );
+}
+
 async function compress(str) {
   const data = new TextEncoder().encode(str);
   const cs = new CompressionStream("deflate-raw");
@@ -38,18 +45,57 @@ function fromBase64url(str) {
 }
 
 export async function buildShareUrl(content) {
-  const compressed = await compress(content);
-  const encoded = toBase64url(compressed);
-  return `${location.origin}${location.pathname}#${HASH_PREFIX}${encoded}`;
+  const utf8 = new TextEncoder().encode(content);
+
+  if (!supportsCompressionStreams()) {
+    const uncompressed = toBase64url(utf8);
+    return `${location.origin}${location.pathname}#${HASH_PREFIX}u.${uncompressed}`;
+  }
+
+  try {
+    const compressed = await compress(content);
+    const encoded = toBase64url(compressed);
+    return `${location.origin}${location.pathname}#${HASH_PREFIX}c.${encoded}`;
+  } catch {
+    const uncompressed = toBase64url(utf8);
+    return `${location.origin}${location.pathname}#${HASH_PREFIX}u.${uncompressed}`;
+  }
 }
 
 export async function readSharedContent() {
   const hash = location.hash.slice(1);
   if (!hash.startsWith(HASH_PREFIX)) return null;
-  const encoded = hash.slice(HASH_PREFIX.length);
-  if (!encoded) return null;
+
+  const payload = hash.slice(HASH_PREFIX.length);
+  if (!payload) return null;
+
+  const dotIndex = payload.indexOf(".");
+
+  // New format: c.<data> (compressed) or u.<data> (utf8 bytes)
+  if (dotIndex > 0) {
+    const mode = payload.slice(0, dotIndex);
+    const encoded = payload.slice(dotIndex + 1);
+    if (!encoded) return null;
+
+    try {
+      const bytes = fromBase64url(encoded);
+      if (mode === "u") {
+        return new TextDecoder().decode(bytes);
+      }
+      if (mode === "c") {
+        if (!supportsCompressionStreams()) return null;
+        return await decompress(bytes);
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  // Legacy format: raw compressed payload without mode prefix.
   try {
-    const bytes = fromBase64url(encoded);
+    if (!supportsCompressionStreams()) return null;
+    const bytes = fromBase64url(payload);
     return await decompress(bytes);
   } catch {
     return null;

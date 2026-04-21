@@ -9,7 +9,7 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onMounted } from "vue";
+import { ref, watch, nextTick } from "vue";
 import { renderMarkdown } from "../utils/markdown.js";
 import mermaid from "mermaid";
 
@@ -33,6 +33,7 @@ const props = defineProps({
 
 const previewEl = ref(null);
 const renderedHtml = ref("");
+let renderToken = 0;
 
 function setStyleContent(id, lightCss, darkCss) {
   let style = document.getElementById(id);
@@ -75,15 +76,21 @@ watch(
 );
 
 async function renderAndHighlight() {
+  const currentToken = ++renderToken;
   const html = await renderMarkdown(props.markdown);
+
+  if (currentToken !== renderToken) return;
 
   if (renderedHtml.value === html) {
     renderedHtml.value = "";
     await nextTick();
+    if (currentToken !== renderToken) return;
   }
 
   renderedHtml.value = html;
   await nextTick();
+
+  if (currentToken !== renderToken) return;
 
   if (!previewEl.value) return;
 
@@ -97,10 +104,14 @@ async function renderAndHighlight() {
 
     try {
       const { svg } = await mermaid.render(id, definition);
+      if (currentToken !== renderToken) return;
+
       const container = document.createElement("div");
       container.className = "mermaid-diagram";
       container.innerHTML = svg;
-      pre.replaceWith(container);
+      if (pre?.isConnected) {
+        pre.replaceWith(container);
+      }
     } catch (err) {
       console.warn("Mermaid render error:", err);
     }
