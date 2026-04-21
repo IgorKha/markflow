@@ -1,5 +1,5 @@
 <template>
-  <div class="preview-container">
+  <div ref="previewContainer" class="preview-container">
     <div
       ref="previewEl"
       class="preview-content markdown-body"
@@ -33,6 +33,7 @@ const props = defineProps({
 });
 
 const previewEl = ref(null);
+const previewContainer = ref(null);
 const renderedHtml = ref("");
 let renderToken = 0;
 
@@ -124,7 +125,54 @@ async function renderAndHighlight() {
   }
 }
 
-defineExpose({ previewEl });
+function getScrollRatio() {
+  const container = previewContainer.value;
+  if (!container) return 0;
+
+  const maxScrollTop = Math.max(
+    container.scrollHeight - container.clientHeight,
+    0,
+  );
+  if (maxScrollTop === 0) return 0;
+
+  return container.scrollTop / maxScrollTop;
+}
+
+function setScrollRatio(ratio) {
+  const container = previewContainer.value;
+  if (!container) return;
+
+  const maxScrollTop = Math.max(
+    container.scrollHeight - container.clientHeight,
+    0,
+  );
+  const clampedRatio = Math.min(Math.max(ratio, 0), 1);
+  container.scrollTop = maxScrollTop * clampedRatio;
+}
+
+function onScrollChange(callback) {
+  const container = previewContainer.value;
+  if (!container) {
+    return () => {};
+  }
+
+  const handler = () => {
+    callback(getScrollRatio());
+  };
+
+  container.addEventListener("scroll", handler, { passive: true });
+
+  return () => {
+    container.removeEventListener("scroll", handler);
+  };
+}
+
+defineExpose({
+  previewEl,
+  getScrollRatio,
+  setScrollRatio,
+  onScrollChange,
+});
 </script>
 
 <style scoped>

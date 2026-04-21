@@ -29,6 +29,40 @@ const emit = defineEmits(["update:modelValue"]);
 const editorContainer = ref(null);
 let editor = null;
 
+function getScrollRatio() {
+  if (!editor) return 0;
+  const maxScrollTop = Math.max(
+    editor.getScrollHeight() - editor.getLayoutInfo().height,
+    0,
+  );
+  if (maxScrollTop === 0) return 0;
+  return editor.getScrollTop() / maxScrollTop;
+}
+
+function setScrollRatio(ratio) {
+  if (!editor) return;
+  const maxScrollTop = Math.max(
+    editor.getScrollHeight() - editor.getLayoutInfo().height,
+    0,
+  );
+  const clampedRatio = Math.min(Math.max(ratio, 0), 1);
+  editor.setScrollTop(maxScrollTop * clampedRatio);
+}
+
+function onScrollChange(callback) {
+  if (!editor) {
+    return () => {};
+  }
+
+  const disposable = editor.onDidScrollChange(() => {
+    callback(getScrollRatio());
+  });
+
+  return () => {
+    disposable.dispose();
+  };
+}
+
 onMounted(() => {
   editor = monaco.editor.create(editorContainer.value, {
     value: props.modelValue,
@@ -69,6 +103,12 @@ watch(
 
 onBeforeUnmount(() => {
   editor?.dispose();
+});
+
+defineExpose({
+  getScrollRatio,
+  setScrollRatio,
+  onScrollChange,
 });
 </script>
 

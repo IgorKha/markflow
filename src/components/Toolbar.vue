@@ -56,14 +56,15 @@
       </div>
 
       <button
-        class="btn btn--icon"
-        :title="themeLabel"
-        @click="emit('toggle-theme')"
+        class="btn"
+        :class="{ 'btn--active': splitScrollEnabled }"
+        :disabled="!splitScrollAvailable"
+        :title="splitScrollLabel"
+        @click="emit('toggle-split-scroll')"
       >
-        <span v-if="theme === 'dark'">☀️</span>
-        <span v-else>🌙</span>
+        Sync Scroll
       </button>
-
+      |
       <button
         class="btn"
         title="Save as Markdown (.md)"
@@ -83,13 +84,22 @@
       >
         ↓ PDF
       </button>
-
+      |
       <button
         class="btn btn--share"
         title="Copy shareable link"
         @click="emit('share')"
       >
         {{ shareCopied ? "✓ Copied!" : "⤴ Share" }}
+      </button>
+
+      <button
+        class="btn btn--icon"
+        :title="themeLabel"
+        @click="emit('toggle-theme')"
+      >
+        <span v-if="theme === 'dark'">☀️</span>
+        <span v-else>🌙</span>
       </button>
     </div>
   </header>
@@ -110,6 +120,14 @@ const props = defineProps({
     type: String,
     default: "split",
   },
+  splitScrollEnabled: {
+    type: Boolean,
+    default: false,
+  },
+  splitScrollAvailable: {
+    type: Boolean,
+    default: false,
+  },
   shareCopied: {
     type: Boolean,
     default: false,
@@ -119,6 +137,7 @@ const props = defineProps({
 const emit = defineEmits([
   "toggle-theme",
   "change-view-mode",
+  "toggle-split-scroll",
   "export-md",
   "export-html",
   "export-pdf",
@@ -128,6 +147,16 @@ const emit = defineEmits([
 const themeLabel = computed(() =>
   props.theme === "dark" ? "Switch to light mode" : "Switch to dark mode",
 );
+
+const splitScrollLabel = computed(() => {
+  if (!props.splitScrollAvailable) {
+    return "Available only in split view";
+  }
+
+  return props.splitScrollEnabled
+    ? "Disable split scroll sync"
+    : "Enable split scroll sync";
+});
 </script>
 
 <style scoped>
@@ -202,6 +231,16 @@ const themeLabel = computed(() =>
 
 .btn:hover {
   background: var(--btn-hover-bg);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn--active {
+  background: var(--btn-hover-bg);
+  border-color: var(--text);
 }
 
 .btn--icon {

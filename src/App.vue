@@ -3,9 +3,12 @@
     <Toolbar
       :theme="theme"
       :view-mode="viewMode"
+      :split-scroll-enabled="splitScrollEnabled"
+      :split-scroll-available="viewMode === 'split'"
       :share-copied="shareCopied"
       @toggle-theme="toggleTheme"
       @change-view-mode="viewMode = $event"
+      @toggle-split-scroll="splitScrollEnabled = !splitScrollEnabled"
       @export-md="onExportMd"
       @export-html="onExportHtml"
       @export-pdf="onExportPdf"
@@ -14,7 +17,7 @@
 
     <main class="workspace">
       <div v-if="viewMode !== 'preview'" class="pane pane--editor">
-        <Editor v-model="markdownSource" :theme="theme" />
+        <Editor ref="editorRef" v-model="markdownSource" :theme="theme" />
       </div>
       <div v-if="viewMode === 'split'" class="pane-divider" />
       <div v-if="viewMode !== 'editor'" class="pane pane--preview">
@@ -25,7 +28,7 @@
 </template>
 
 <script setup>
-import { ref, defineAsyncComponent, onMounted } from "vue";
+import { ref, defineAsyncComponent, onMounted, watch, watchEffect } from "vue";
 import Toolbar from "./components/Toolbar.vue";
 const Editor = defineAsyncComponent(() => import("./components/Editor.vue"));
 const Preview = defineAsyncComponent(() => import("./components/Preview.vue"));
@@ -33,6 +36,53 @@ import { exportPDF, exportHTML, exportMarkdown } from "./utils/export.js";
 import { buildShareUrl, readSharedContent } from "./utils/share.js";
 
 const viewMode = ref("split");
+const splitScrollEnabled = ref(false);
+const editorRef = ref(null);
+const previewRef = ref(null);
+
+let isSyncingScroll = false;
+
+watchEffect((onCleanup) => {
+  if (
+    !splitScrollEnabled.value ||
+    viewMode.value !== "split" ||
+    !editorRef.value ||
+    !previewRef.value
+  ) {
+    return;
+  }
+
+  const releaseSyncLock = () => {
+    requestAnimationFrame(() => {
+      isSyncingScroll = false;
+    });
+  };
+
+  const syncToPreview = (ratio) => {
+    if (isSyncingScroll) return;
+    isSyncingScroll = true;
+    previewRef.value?.setScrollRatio(ratio);
+    releaseSyncLock();
+  };
+
+  const syncToEditor = (ratio) => {
+    if (isSyncingScroll) return;
+    isSyncingScroll = true;
+    editorRef.value?.setScrollRatio(ratio);
+    releaseSyncLock();
+  };
+
+  syncToPreview(editorRef.value.getScrollRatio());
+
+  const stopEditorScroll = editorRef.value.onScrollChange(syncToPreview);
+  const stopPreviewScroll = previewRef.value.onScrollChange(syncToEditor);
+
+  onCleanup(() => {
+    stopEditorScroll?.();
+    stopPreviewScroll?.();
+    isSyncingScroll = false;
+  });
+});
 
 const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 const theme = ref(prefersDark ? "dark" : "light");
@@ -115,7 +165,6 @@ const markdownSource = ref(
   localStorage.getItem(STORAGE_KEY) ?? DEFAULT_CONTENT,
 );
 
-import { watch } from "vue";
 watch(markdownSource, (val) => {
   localStorage.setItem(STORAGE_KEY, val);
 });
@@ -176,8 +225,6 @@ async function onShare() {
     console.warn("Share failed:", err);
   }
 }
-
-const previewRef = ref(null);
 
 async function onExportPdf() {
   const el = previewRef.value?.previewEl;
