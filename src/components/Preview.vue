@@ -10,6 +10,7 @@
 
 <script setup>
 import { ref, watch, nextTick } from "vue";
+import DOMPurify from "dompurify";
 import { renderMarkdown } from "../utils/markdown.js";
 import mermaid from "mermaid";
 
@@ -34,6 +35,10 @@ const props = defineProps({
 const previewEl = ref(null);
 const renderedHtml = ref("");
 let renderToken = 0;
+
+const SANITIZE_OPTIONS = {
+  USE_PROFILES: { html: true, svg: true, mathMl: true },
+};
 
 function setStyleContent(id, lightCss, darkCss) {
   let style = document.getElementById(id);
@@ -78,16 +83,17 @@ watch(
 async function renderAndHighlight() {
   const currentToken = ++renderToken;
   const html = await renderMarkdown(props.markdown);
+  const sanitizedHtml = DOMPurify.sanitize(html, SANITIZE_OPTIONS);
 
   if (currentToken !== renderToken) return;
 
-  if (renderedHtml.value === html) {
+  if (renderedHtml.value === sanitizedHtml) {
     renderedHtml.value = "";
     await nextTick();
     if (currentToken !== renderToken) return;
   }
 
-  renderedHtml.value = html;
+  renderedHtml.value = sanitizedHtml;
   await nextTick();
 
   if (currentToken !== renderToken) return;
