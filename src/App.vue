@@ -23,10 +23,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, defineAsyncComponent } from "vue";
 import Toolbar from "./components/Toolbar.vue";
-import Editor from "./components/Editor.vue";
-import Preview from "./components/Preview.vue";
+const Editor = defineAsyncComponent(() => import("./components/Editor.vue"));
+const Preview = defineAsyncComponent(() => import("./components/Preview.vue"));
 import { exportPDF, exportHTML, exportMarkdown } from "./utils/export.js";
 
 const viewMode = ref("split");
@@ -38,7 +38,6 @@ function toggleTheme() {
   theme.value = theme.value === "dark" ? "light" : "dark";
 }
 
-// ── Content ──────────────────────────────────────────────────────────────────
 const STORAGE_KEY = "markflow_content";
 
 const DEFAULT_CONTENT = `# Welcome to MarkFlow

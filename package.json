@@ -9,11 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@monaco-editor/loader": "^1.4.0",
     "github-markdown-css": "^5.8.1",
     "highlight.js": "^11.11.1",
     "katex": "^0.16.22",
     "mermaid": "^11.6.0",
+    "monaco-editor": "^0.55.1",
     "rehype-highlight": "^7.0.1",
     "rehype-katex": "^7.0.1",
     "rehype-stringify": "^10.0.1",

@@ -4,7 +4,14 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from "vue";
-import loader from "@monaco-editor/loader";
+import * as monaco from "monaco-editor";
+import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
+
+self.MonacoEnvironment = {
+  getWorker() {
+    return new editorWorker();
+  },
+};
 
 const props = defineProps({
   modelValue: {
@@ -21,15 +28,8 @@ const emit = defineEmits(["update:modelValue"]);
 
 const editorContainer = ref(null);
 let editor = null;
-let monaco = null;
 
-onMounted(async () => {
-  loader.config({
-    paths: { vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs" },
-  });
-
-  monaco = await loader.init();
-
+onMounted(() => {
   editor = monaco.editor.create(editorContainer.value, {
     value: props.modelValue,
     language: "markdown",
@@ -52,7 +52,7 @@ onMounted(async () => {
 watch(
   () => props.theme,
   (newTheme) => {
-    if (monaco && editor) {
+    if (editor) {
       monaco.editor.setTheme(newTheme === "dark" ? "vs-dark" : "vs");
     }
   },
