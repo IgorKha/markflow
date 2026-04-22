@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
-@import "tailwindcss";
+@import "tailwindcss/theme";
+@import "tailwindcss/utilities";
 
 /* Map design tokens to Tailwind color utilities (resolved at runtime via CSS vars) */
 @theme inline {
@@ -16,10 +17,17 @@
 }
 
 @layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
   html,
   body,
   #app {
     height: 100%;
+    margin: 0;
     font-family:
       "Inter",
       ui-sans-serif,
@@ -32,6 +40,14 @@
       sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
   }
 }
 
@@ -82,21 +98,4 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
-}
-
-/* Tailwind preflight removes list markers globally; restore them for markdown content. */
-.markdown-body ul {
-  list-style-type: disc;
-}
-
-.markdown-body ul ul {
-  list-style-type: circle;
-}
-
-.markdown-body ul ul ul {
-  list-style-type: square;
-}
-
-.markdown-body ol {
-  list-style-type: decimal;
 }
