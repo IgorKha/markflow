@@ -23,11 +23,16 @@
 
     <main
       id="main-content"
+      ref="splitContainerRef"
       class="flex flex-1 overflow-hidden flex-col sm:flex-row"
     >
       <div
         v-if="viewMode !== 'preview'"
-        class="flex-1 overflow-hidden min-w-0 min-h-0"
+        :class="[
+          viewMode === 'split' ? 'shrink-0' : 'flex-1',
+          'overflow-hidden min-w-0 min-h-0',
+        ]"
+        :style="editorPaneStyle"
         role="region"
         aria-label="Markdown editor"
       >
@@ -35,13 +40,35 @@
       </div>
       <div
         v-if="viewMode === 'split'"
-        class="h-px w-full sm:h-auto sm:w-px bg-border shrink-0"
+        class="group shrink-0 select-none touch-none h-2 w-full sm:h-auto sm:w-2 bg-border/80 hover:bg-accent/30 focus-visible:outline-2 focus-visible:outline-accent transition-colors duration-150 cursor-row-resize sm:cursor-col-resize flex items-center justify-center"
         role="separator"
-        aria-hidden="true"
-      />
+        :aria-orientation="splitterOrientation"
+        aria-label="Resize editor and preview"
+        :aria-valuemin="MIN_SPLIT_RATIO"
+        :aria-valuemax="MAX_SPLIT_RATIO"
+        :aria-valuenow="Math.round(splitRatio)"
+        tabindex="0"
+        @pointerdown="onSplitterPointerDown"
+        @keydown="onSplitterKeydown"
+      >
+        <span
+          class="pointer-events-none rounded-md border border-border/80 bg-surface/70 flex items-center justify-center transition-colors duration-150 group-hover:border-accent/60 group-focus-visible:border-accent/70"
+          :class="isWideLayout ? 'h-10 w-3.5' : 'h-3.5 w-10'"
+          aria-hidden="true"
+        >
+          <span
+            class="rounded-full bg-muted/80 transition-colors duration-150 group-hover:bg-accent/70 group-focus-visible:bg-accent/80"
+            :class="isWideLayout ? 'h-6 w-0.5' : 'h-0.5 w-6'"
+          />
+        </span>
+      </div>
       <div
         v-if="viewMode !== 'editor'"
-        class="flex-1 overflow-hidden min-w-0 min-h-0"
+        :class="[
+          viewMode === 'split' ? 'shrink-0' : 'flex-1',
+          'overflow-hidden min-w-0 min-h-0',
+        ]"
+        :style="previewPaneStyle"
         role="region"
         aria-label="Markdown preview"
       >
@@ -52,19 +79,172 @@
 </template>
 
 <script setup>
-import { ref, defineAsyncComponent, onMounted, watch, watchEffect } from "vue";
+import {
+  ref,
+  computed,
+  defineAsyncComponent,
+  onBeforeUnmount,
+  onMounted,
+  watch,
+  watchEffect,
+} from "vue";
 import Toolbar from "./components/Toolbar.vue";
 const Editor = defineAsyncComponent(() => import("./components/Editor.vue"));
 const Preview = defineAsyncComponent(() => import("./components/Preview.vue"));
 import { exportPDF, exportHTML, exportMarkdown } from "./utils/export.js";
 import { buildShareUrl, readSharedContent } from "./utils/share.js";
 
+const STORAGE_KEY = "markflow_content";
+const SPLIT_RATIO_STORAGE_KEY = "markflow_split_ratio";
+const DEFAULT_SPLIT_RATIO = 50;
+const MIN_SPLIT_RATIO = 20;
+const MAX_SPLIT_RATIO = 80;
+const SPLIT_KEYBOARD_STEP = 2;
+const SPLIT_KEYBOARD_STEP_LARGE = 5;
+
+function clampSplitRatio(value) {
+  return Math.min(MAX_SPLIT_RATIO, Math.max(MIN_SPLIT_RATIO, value));
+}
+
+function loadSplitRatio() {
+  const raw = Number.parseFloat(localStorage.getItem(SPLIT_RATIO_STORAGE_KEY));
+  if (!Number.isFinite(raw)) {
+    return DEFAULT_SPLIT_RATIO;
+  }
+
+  return clampSplitRatio(raw);
+}
+
 const viewMode = ref("split");
 const splitScrollEnabled = ref(false);
 const editorRef = ref(null);
 const previewRef = ref(null);
+const splitContainerRef = ref(null);
+const viewportMediaQuery = window.matchMedia("(min-width: 640px)");
+const isWideLayout = ref(viewportMediaQuery.matches);
+const splitRatio = ref(loadSplitRatio());
+
+const editorPaneStyle = computed(() =>
+  viewMode.value === "split" ? { flex: `0 0 ${splitRatio.value}%` } : undefined,
+);
+
+const previewPaneStyle = computed(() =>
+  viewMode.value === "split"
+    ? { flex: `1 1 ${100 - splitRatio.value}%` }
+    : undefined,
+);
+
+const splitterOrientation = computed(() =>
+  isWideLayout.value ? "vertical" : "horizontal",
+);
 
 let isSyncingScroll = false;
+let isDraggingSplitter = false;
+let cleanupSplitterDragListeners = null;
+let cleanupViewportListener = () => {};
+let previousBodyUserSelect = "";
+let previousBodyCursor = "";
+
+function setSplitRatio(nextRatio) {
+  splitRatio.value = clampSplitRatio(nextRatio);
+}
+
+function updateSplitRatioFromPointer(clientX, clientY) {
+  const container = splitContainerRef.value;
+  if (!container) return;
+
+  const rect = container.getBoundingClientRect();
+  if (isWideLayout.value) {
+    if (rect.width <= 0) return;
+    setSplitRatio(((clientX - rect.left) / rect.width) * 100);
+    return;
+  }
+
+  if (rect.height <= 0) return;
+  setSplitRatio(((clientY - rect.top) / rect.height) * 100);
+}
+
+function stopSplitterDrag() {
+  if (!isDraggingSplitter && !cleanupSplitterDragListeners) {
+    return;
+  }
+
+  isDraggingSplitter = false;
+  cleanupSplitterDragListeners?.();
+  cleanupSplitterDragListeners = null;
+  document.body.style.userSelect = previousBodyUserSelect;
+  document.body.style.cursor = previousBodyCursor;
+}
+
+function onSplitterPointerDown(event) {
+  if (event.button !== 0) {
+    return;
+  }
+
+  event.preventDefault();
+  isDraggingSplitter = true;
+  updateSplitRatioFromPointer(event.clientX, event.clientY);
+
+  previousBodyUserSelect = document.body.style.userSelect;
+  previousBodyCursor = document.body.style.cursor;
+  document.body.style.userSelect = "none";
+  document.body.style.cursor = isWideLayout.value ? "col-resize" : "row-resize";
+
+  const handlePointerMove = (moveEvent) => {
+    if (!isDraggingSplitter) return;
+    updateSplitRatioFromPointer(moveEvent.clientX, moveEvent.clientY);
+  };
+
+  const handlePointerUp = () => {
+    stopSplitterDrag();
+  };
+
+  window.addEventListener("pointermove", handlePointerMove);
+  window.addEventListener("pointerup", handlePointerUp);
+
+  cleanupSplitterDragListeners = () => {
+    window.removeEventListener("pointermove", handlePointerMove);
+    window.removeEventListener("pointerup", handlePointerUp);
+  };
+}
+
+function onSplitterKeydown(event) {
+  const step = event.shiftKey ? SPLIT_KEYBOARD_STEP_LARGE : SPLIT_KEYBOARD_STEP;
+  let nextRatio = splitRatio.value;
+
+  if (event.key === "Home") {
+    nextRatio = MIN_SPLIT_RATIO;
+  } else if (event.key === "End") {
+    nextRatio = MAX_SPLIT_RATIO;
+  } else if (isWideLayout.value) {
+    if (event.key === "ArrowLeft") {
+      nextRatio -= step;
+    } else if (event.key === "ArrowRight") {
+      nextRatio += step;
+    } else {
+      return;
+    }
+  } else if (event.key === "ArrowUp") {
+    nextRatio -= step;
+  } else if (event.key === "ArrowDown") {
+    nextRatio += step;
+  } else {
+    return;
+  }
+
+  event.preventDefault();
+  setSplitRatio(nextRatio);
+}
+
+watch(splitRatio, (value) => {
+  localStorage.setItem(SPLIT_RATIO_STORAGE_KEY, value.toFixed(2));
+});
+
+watch(viewMode, (mode) => {
+  if (mode !== "split") {
+    stopSplitterDrag();
+  }
+});
 
 watchEffect((onCleanup) => {
   if (
@@ -158,8 +338,6 @@ function toggleTheme() {
   theme.value = theme.value === "dark" ? "light" : "dark";
 }
 
-const STORAGE_KEY = "markflow_content";
-
 const DEFAULT_CONTENT = `# Welcome to MarkFlow
 
 A live Markdown editor with **GFM**, LaTeX math, Mermaid diagrams, and code highlighting.
@@ -239,11 +417,32 @@ watch(markdownSource, (val) => {
 onMounted(async () => {
   applyThemeColorMeta(theme.value);
 
+  const handleViewportChange = (event) => {
+    isWideLayout.value = event.matches;
+  };
+
+  if (viewportMediaQuery.addEventListener) {
+    viewportMediaQuery.addEventListener("change", handleViewportChange);
+    cleanupViewportListener = () => {
+      viewportMediaQuery.removeEventListener("change", handleViewportChange);
+    };
+  } else {
+    viewportMediaQuery.addListener(handleViewportChange);
+    cleanupViewportListener = () => {
+      viewportMediaQuery.removeListener(handleViewportChange);
+    };
+  }
+
   const shared = await readSharedContent();
   if (shared !== null) {
     markdownSource.value = shared;
     history.replaceState(null, "", location.pathname);
   }
+});
+
+onBeforeUnmount(() => {
+  stopSplitterDrag();
+  cleanupViewportListener();
 });
 
 const shareCopied = ref(false);
