@@ -111,6 +111,49 @@ watchEffect((onCleanup) => {
 const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 const theme = ref(prefersDark ? "dark" : "light");
 
+const FALLBACK_THEME_COLORS = {
+  light: "#f4f4f5",
+  dark: "#111113",
+};
+
+function getToolbarThemeColor(themeValue) {
+  const themedRoot = document.querySelector("[data-theme]");
+  const fallback =
+    FALLBACK_THEME_COLORS[themeValue] ?? FALLBACK_THEME_COLORS.light;
+
+  if (!themedRoot) {
+    return fallback;
+  }
+
+  const toolbarBg = getComputedStyle(themedRoot)
+    .getPropertyValue("--toolbar-bg")
+    .trim();
+
+  return toolbarBg || fallback;
+}
+
+function applyThemeColorMeta(themeValue) {
+  const color = getToolbarThemeColor(themeValue);
+  let themeColorMeta = document.querySelector('meta[name="theme-color"]');
+
+  if (!themeColorMeta) {
+    themeColorMeta = document.createElement("meta");
+    themeColorMeta.setAttribute("name", "theme-color");
+    document.head.appendChild(themeColorMeta);
+  }
+
+  themeColorMeta.setAttribute("content", color);
+  document.documentElement.style.colorScheme = themeValue;
+}
+
+watch(
+  theme,
+  (value) => {
+    applyThemeColorMeta(value);
+  },
+  { immediate: true, flush: "post" },
+);
+
 function toggleTheme() {
   theme.value = theme.value === "dark" ? "light" : "dark";
 }
@@ -194,6 +237,8 @@ watch(markdownSource, (val) => {
 });
 
 onMounted(async () => {
+  applyThemeColorMeta(theme.value);
+
   const shared = await readSharedContent();
   if (shared !== null) {
     markdownSource.value = shared;
