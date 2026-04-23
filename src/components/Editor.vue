@@ -6,6 +6,7 @@
 import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import * as monaco from "monaco-editor";
 import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
+import { createScrollBridge } from "../utils/scrollBridge.js";
 
 self.MonacoEnvironment = {
   getWorker() {
@@ -29,39 +30,38 @@ const emit = defineEmits(["update:modelValue"]);
 const editorContainer = ref(null);
 let editor = null;
 
-function getScrollRatio() {
-  if (!editor) return 0;
-  const maxScrollTop = Math.max(
-    editor.getScrollHeight() - editor.getLayoutInfo().height,
-    0,
-  );
-  if (maxScrollTop === 0) return 0;
-  return editor.getScrollTop() / maxScrollTop;
-}
+const scrollBridge = createScrollBridge({
+  getMetrics: () => {
+    if (!editor) {
+      return null;
+    }
 
-function setScrollRatio(ratio) {
-  if (!editor) return;
-  const maxScrollTop = Math.max(
-    editor.getScrollHeight() - editor.getLayoutInfo().height,
-    0,
-  );
-  const clampedRatio = Math.min(Math.max(ratio, 0), 1);
-  editor.setScrollTop(maxScrollTop * clampedRatio);
-}
+    return {
+      scrollTop: editor.getScrollTop(),
+      scrollHeight: editor.getScrollHeight(),
+      viewportSize: editor.getLayoutInfo().height,
+    };
+  },
+  setScrollTop: (nextScrollTop) => {
+    if (!editor) {
+      return;
+    }
 
-function onScrollChange(callback) {
-  if (!editor) {
-    return () => {};
-  }
+    editor.setScrollTop(nextScrollTop);
+  },
+  subscribe: (handler) => {
+    if (!editor) {
+      return () => {};
+    }
 
-  const disposable = editor.onDidScrollChange(() => {
-    callback(getScrollRatio());
-  });
+    const disposable = editor.onDidScrollChange(handler);
+    return () => {
+      disposable.dispose();
+    };
+  },
+});
 
-  return () => {
-    disposable.dispose();
-  };
-}
+const { getScrollRatio, setScrollRatio, onScrollChange } = scrollBridge;
 
 onMounted(() => {
   editor = monaco.editor.create(editorContainer.value, {

@@ -1,3 +1,39 @@
+function collectInlineStyles() {
+  return Array.from(document.querySelectorAll("style"))
+    .map((styleNode) => styleNode.outerHTML)
+    .join("\n");
+}
+
+async function collectLinkedStyles(onFetchError) {
+  const linkNodes = Array.from(
+    document.querySelectorAll('link[rel="stylesheet"]'),
+  );
+
+  const fetchedStyles = await Promise.all(
+    linkNodes.map(async (linkNode) => {
+      try {
+        const response = await fetch(linkNode.href);
+        const css = await response.text();
+        return `<style>${css}</style>`;
+      } catch {
+        return onFetchError(linkNode.href);
+      }
+    }),
+  );
+
+  return fetchedStyles.join("\n");
+}
+
+function downloadTextFile(content, mimeType, filenameWithExtension) {
+  const blob = new Blob([content], { type: mimeType });
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filenameWithExtension;
+  link.click();
+  URL.revokeObjectURL(objectUrl);
+}
+
 /**
  * Export the preview element as a PDF file with selectable text.
  * Opens a styled print window and triggers the browser's native print dialog,
@@ -6,25 +42,8 @@
  * @param {string} filename - Output filename (used as window title)
  */
 export async function exportPDF(el, filename = "document") {
-  const inlineStyles = Array.from(document.querySelectorAll("style"))
-    .map((s) => s.outerHTML)
-    .join("\n");
-
-  const linkNodes = Array.from(
-    document.querySelectorAll('link[rel="stylesheet"]'),
-  );
-  const fetchedStyles = await Promise.all(
-    linkNodes.map(async (link) => {
-      try {
-        const res = await fetch(link.href);
-        const css = await res.text();
-        return `<style>${css}</style>`;
-      } catch {
-        return "";
-      }
-    }),
-  );
-  const linkedStyles = fetchedStyles.join("\n");
+  const inlineStyles = collectInlineStyles();
+  const linkedStyles = await collectLinkedStyles(() => "");
 
   const doc = `<!DOCTYPE html>
 <html lang="en">
@@ -75,24 +94,10 @@ ${el.innerHTML}
  * @param {string} filename     - Output filename (without extension)
  */
 export async function exportHTML(htmlContent, filename = "document") {
-  const styleNodes = Array.from(document.querySelectorAll("style"));
-  const inlineStyles = styleNodes.map((s) => s.outerHTML).join("\n");
-
-  const linkNodes = Array.from(
-    document.querySelectorAll('link[rel="stylesheet"]'),
+  const inlineStyles = collectInlineStyles();
+  const linkedStyles = await collectLinkedStyles(
+    (href) => `<!-- could not inline stylesheet: ${href} -->`,
   );
-  const fetchedStyles = await Promise.all(
-    linkNodes.map(async (link) => {
-      try {
-        const res = await fetch(link.href);
-        const css = await res.text();
-        return `<style>${css}</style>`;
-      } catch {
-        return `<!-- could not inline stylesheet: ${link.href} -->`;
-      }
-    }),
-  );
-  const linkedStyles = fetchedStyles.join("\n");
 
   const doc = `<!DOCTYPE html>
 <html lang="en">
@@ -118,13 +123,7 @@ ${htmlContent}
 </body>
 </html>`;
 
-  const blob = new Blob([doc], { type: "text/html;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${filename}.html`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadTextFile(doc, "text/html;charset=utf-8", `${filename}.html`);
 }
 
 /**
@@ -134,11 +133,5 @@ ${htmlContent}
  * @param {string} filename - Output filename (without extension)
  */
 export function exportMarkdown(markdown, filename = "document") {
-  const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${filename}.md`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadTextFile(markdown, "text/markdown;charset=utf-8", `${filename}.md`);
 }

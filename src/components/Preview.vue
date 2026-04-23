@@ -15,6 +15,7 @@
 import { ref, watch, nextTick } from "vue";
 import DOMPurify from "dompurify";
 import { renderMarkdown } from "../utils/markdown.js";
+import { createScrollBridge } from "../utils/scrollBridge.js";
 import mermaid from "mermaid";
 
 import "katex/dist/katex.min.css";
@@ -129,47 +130,41 @@ async function renderAndHighlight() {
   }
 }
 
-function getScrollRatio() {
-  const container = previewContainer.value;
-  if (!container) return 0;
+const scrollBridge = createScrollBridge({
+  getMetrics: () => {
+    const container = previewContainer.value;
+    if (!container) {
+      return null;
+    }
 
-  const maxScrollTop = Math.max(
-    container.scrollHeight - container.clientHeight,
-    0,
-  );
-  if (maxScrollTop === 0) return 0;
+    return {
+      scrollTop: container.scrollTop,
+      scrollHeight: container.scrollHeight,
+      viewportSize: container.clientHeight,
+    };
+  },
+  setScrollTop: (nextScrollTop) => {
+    const container = previewContainer.value;
+    if (!container) {
+      return;
+    }
 
-  return container.scrollTop / maxScrollTop;
-}
+    container.scrollTop = nextScrollTop;
+  },
+  subscribe: (handler) => {
+    const container = previewContainer.value;
+    if (!container) {
+      return () => {};
+    }
 
-function setScrollRatio(ratio) {
-  const container = previewContainer.value;
-  if (!container) return;
+    container.addEventListener("scroll", handler, { passive: true });
+    return () => {
+      container.removeEventListener("scroll", handler);
+    };
+  },
+});
 
-  const maxScrollTop = Math.max(
-    container.scrollHeight - container.clientHeight,
-    0,
-  );
-  const clampedRatio = Math.min(Math.max(ratio, 0), 1);
-  container.scrollTop = maxScrollTop * clampedRatio;
-}
-
-function onScrollChange(callback) {
-  const container = previewContainer.value;
-  if (!container) {
-    return () => {};
-  }
-
-  const handler = () => {
-    callback(getScrollRatio());
-  };
-
-  container.addEventListener("scroll", handler, { passive: true });
-
-  return () => {
-    container.removeEventListener("scroll", handler);
-  };
-}
+const { getScrollRatio, setScrollRatio, onScrollChange } = scrollBridge;
 
 defineExpose({
   previewEl,
