@@ -1,4 +1,5 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import type { CSSProperties } from "vue";
 import {
   DEFAULT_SPLIT_RATIO,
   MAX_SPLIT_RATIO,
@@ -6,21 +7,22 @@ import {
   SPLIT_KEYBOARD_STEP,
   SPLIT_KEYBOARD_STEP_LARGE,
   SPLIT_RATIO_STORAGE_KEY,
-} from "../constants/editor.js";
+} from "../constants/editor";
+import type { ViewMode } from "../types/ui";
 
 const SPLIT_LAYOUT_MEDIA_QUERY = "(min-width: 640px)";
 
-function clampSplitRatio(value) {
+function clampSplitRatio(value: number): number {
   return Math.min(MAX_SPLIT_RATIO, Math.max(MIN_SPLIT_RATIO, value));
 }
 
-function loadSplitRatio() {
+function loadSplitRatio(): number {
   if (typeof window === "undefined") {
     return DEFAULT_SPLIT_RATIO;
   }
 
   const raw = Number.parseFloat(
-    window.localStorage.getItem(SPLIT_RATIO_STORAGE_KEY),
+    window.localStorage.getItem(SPLIT_RATIO_STORAGE_KEY) ?? "",
   );
 
   if (!Number.isFinite(raw)) {
@@ -31,9 +33,9 @@ function loadSplitRatio() {
 }
 
 export function useSplitLayout() {
-  const viewMode = ref("split");
+  const viewMode = ref<ViewMode>("split");
   const splitScrollEnabled = ref(false);
-  const splitContainerRef = ref(null);
+  const splitContainerRef = ref<HTMLElement | null>(null);
 
   const mediaQuery =
     typeof window !== "undefined"
@@ -43,33 +45,33 @@ export function useSplitLayout() {
   const isWideLayout = ref(mediaQuery ? mediaQuery.matches : true);
   const splitRatio = ref(loadSplitRatio());
 
-  const editorPaneStyle = computed(() =>
+  const editorPaneStyle = computed<CSSProperties | undefined>(() =>
     viewMode.value === "split"
       ? { flex: `0 0 ${splitRatio.value}%` }
       : undefined,
   );
 
-  const previewPaneStyle = computed(() =>
+  const previewPaneStyle = computed<CSSProperties | undefined>(() =>
     viewMode.value === "split"
       ? { flex: `1 1 ${100 - splitRatio.value}%` }
       : undefined,
   );
 
-  const splitterOrientation = computed(() =>
+  const splitterOrientation = computed<"vertical" | "horizontal">(() =>
     isWideLayout.value ? "vertical" : "horizontal",
   );
 
   let isDraggingSplitter = false;
-  let cleanupSplitterDragListeners = null;
-  let cleanupViewportListener = () => {};
+  let cleanupSplitterDragListeners: (() => void) | null = null;
+  let cleanupViewportListener: () => void = () => { };
   let previousBodyUserSelect = "";
   let previousBodyCursor = "";
 
-  function setSplitRatio(nextRatio) {
+  function setSplitRatio(nextRatio: number): void {
     splitRatio.value = clampSplitRatio(nextRatio);
   }
 
-  function updateSplitRatioFromPointer(clientX, clientY) {
+  function updateSplitRatioFromPointer(clientX: number, clientY: number): void {
     const container = splitContainerRef.value;
     if (!container) {
       return;
@@ -92,7 +94,7 @@ export function useSplitLayout() {
     setSplitRatio(((clientY - rect.top) / rect.height) * 100);
   }
 
-  function stopSplitterDrag() {
+  function stopSplitterDrag(): void {
     if (!isDraggingSplitter && !cleanupSplitterDragListeners) {
       return;
     }
@@ -109,7 +111,7 @@ export function useSplitLayout() {
     document.body.style.cursor = previousBodyCursor;
   }
 
-  function onSplitterPointerDown(event) {
+  function onSplitterPointerDown(event: PointerEvent): void {
     if (event.button !== 0 || typeof document === "undefined") {
       return;
     }
@@ -121,11 +123,9 @@ export function useSplitLayout() {
     previousBodyUserSelect = document.body.style.userSelect;
     previousBodyCursor = document.body.style.cursor;
     document.body.style.userSelect = "none";
-    document.body.style.cursor = isWideLayout.value
-      ? "col-resize"
-      : "row-resize";
+    document.body.style.cursor = isWideLayout.value ? "col-resize" : "row-resize";
 
-    const handlePointerMove = (moveEvent) => {
+    const handlePointerMove = (moveEvent: PointerEvent): void => {
       if (!isDraggingSplitter) {
         return;
       }
@@ -133,7 +133,7 @@ export function useSplitLayout() {
       updateSplitRatioFromPointer(moveEvent.clientX, moveEvent.clientY);
     };
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (): void => {
       stopSplitterDrag();
     };
 
@@ -146,7 +146,7 @@ export function useSplitLayout() {
     };
   }
 
-  function onSplitterKeydown(event) {
+  function onSplitterKeydown(event: KeyboardEvent): void {
     const step = event.shiftKey
       ? SPLIT_KEYBOARD_STEP_LARGE
       : SPLIT_KEYBOARD_STEP;
@@ -196,7 +196,7 @@ export function useSplitLayout() {
       return;
     }
 
-    const handleViewportChange = (event) => {
+    const handleViewportChange = (event: MediaQueryListEvent): void => {
       isWideLayout.value = event.matches;
     };
 

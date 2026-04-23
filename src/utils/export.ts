@@ -1,12 +1,14 @@
-function collectInlineStyles() {
+function collectInlineStyles(): string {
   return Array.from(document.querySelectorAll("style"))
     .map((styleNode) => styleNode.outerHTML)
     .join("\n");
 }
 
-async function collectLinkedStyles(onFetchError) {
+async function collectLinkedStyles(
+  onFetchError: (href: string) => string,
+): Promise<string> {
   const linkNodes = Array.from(
-    document.querySelectorAll('link[rel="stylesheet"]'),
+    document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'),
   );
 
   const fetchedStyles = await Promise.all(
@@ -24,13 +26,19 @@ async function collectLinkedStyles(onFetchError) {
   return fetchedStyles.join("\n");
 }
 
-function downloadTextFile(content, mimeType, filenameWithExtension) {
+function downloadTextFile(
+  content: string,
+  mimeType: string,
+  filenameWithExtension: string,
+): void {
   const blob = new Blob([content], { type: mimeType });
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");
+
   link.href = objectUrl;
   link.download = filenameWithExtension;
   link.click();
+
   URL.revokeObjectURL(objectUrl);
 }
 
@@ -38,10 +46,11 @@ function downloadTextFile(content, mimeType, filenameWithExtension) {
  * Export the preview element as a PDF file with selectable text.
  * Opens a styled print window and triggers the browser's native print dialog,
  * which allows saving as PDF with real, searchable, copy-able text.
- * @param {HTMLElement} el  - The preview container element
- * @param {string} filename - Output filename (used as window title)
  */
-export async function exportPDF(el, filename = "document") {
+export async function exportPDF(
+  el: HTMLElement,
+  filename = "document",
+): Promise<void> {
   const inlineStyles = collectInlineStyles();
   const linkedStyles = await collectLinkedStyles(() => "");
 
@@ -82,6 +91,7 @@ ${el.innerHTML}
     alert("Please allow pop-ups in your browser to export PDF.");
     return;
   }
+
   printWindow.document.open();
   printWindow.document.write(doc);
   printWindow.document.close();
@@ -90,10 +100,11 @@ ${el.innerHTML}
 /**
  * Export the rendered HTML as a self-contained .html file.
  * Inlines KaTeX and highlight.js CSS from the document's stylesheets.
- * @param {string} htmlContent  - Inner HTML of the preview element
- * @param {string} filename     - Output filename (without extension)
  */
-export async function exportHTML(htmlContent, filename = "document") {
+export async function exportHTML(
+  htmlContent: string,
+  filename = "document",
+): Promise<void> {
   const inlineStyles = collectInlineStyles();
   const linkedStyles = await collectLinkedStyles(
     (href) => `<!-- could not inline stylesheet: ${href} -->`,
@@ -129,9 +140,7 @@ ${htmlContent}
 /**
  * Export the raw Markdown source as a .md file.
  * Opens in any text editor; rendered natively by GitHub, VS Code, Obsidian, etc.
- * @param {string} markdown - Raw Markdown string
- * @param {string} filename - Output filename (without extension)
  */
-export function exportMarkdown(markdown, filename = "document") {
+export function exportMarkdown(markdown: string, filename = "document"): void {
   downloadTextFile(markdown, "text/markdown;charset=utf-8", `${filename}.md`);
 }

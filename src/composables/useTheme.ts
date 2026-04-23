@@ -1,13 +1,14 @@
 import { ref, watch } from "vue";
+import type { Theme } from "../types/ui";
 
 const DARK_THEME_MEDIA_QUERY = "(prefers-color-scheme: dark)";
 
-const FALLBACK_THEME_COLORS = {
+const FALLBACK_THEME_COLORS: Record<Theme, string> = {
   light: "#f4f4f5",
   dark: "#111113",
 };
 
-function getInitialTheme() {
+function getInitialTheme(): Theme {
   if (typeof window === "undefined") {
     return "light";
   }
@@ -15,9 +16,8 @@ function getInitialTheme() {
   return window.matchMedia(DARK_THEME_MEDIA_QUERY).matches ? "dark" : "light";
 }
 
-function getToolbarThemeColor(themeValue) {
-  const fallback =
-    FALLBACK_THEME_COLORS[themeValue] ?? FALLBACK_THEME_COLORS.light;
+function getToolbarThemeColor(themeValue: Theme): string {
+  const fallback = FALLBACK_THEME_COLORS[themeValue] ?? FALLBACK_THEME_COLORS.light;
 
   if (typeof document === "undefined") {
     return fallback;
@@ -35,7 +35,7 @@ function getToolbarThemeColor(themeValue) {
   return toolbarBg || fallback;
 }
 
-function applyThemeColorMeta(themeValue) {
+function applyThemeColorMeta(themeValue: Theme): void {
   if (typeof document === "undefined") {
     return;
   }
@@ -54,7 +54,7 @@ function applyThemeColorMeta(themeValue) {
 }
 
 export function useTheme() {
-  const theme = ref(getInitialTheme());
+  const theme = ref<Theme>(getInitialTheme());
 
   watch(
     theme,
@@ -64,7 +64,7 @@ export function useTheme() {
     { immediate: true, flush: "post" },
   );
 
-  function toggleTheme() {
+  function toggleTheme(): void {
     theme.value = theme.value === "dark" ? "light" : "dark";
   }
 

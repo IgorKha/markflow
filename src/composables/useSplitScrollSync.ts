@@ -1,11 +1,21 @@
 import { watchEffect } from "vue";
+import type { Ref } from "vue";
+import type { EditorExpose, PreviewExpose } from "../types/scroll";
+import type { ViewMode } from "../types/ui";
+
+interface UseSplitScrollSyncOptions {
+  splitScrollEnabled: Ref<boolean>;
+  viewMode: Ref<ViewMode>;
+  editorRef: Ref<EditorExpose | null>;
+  previewRef: Ref<PreviewExpose | null>;
+}
 
 export function useSplitScrollSync({
   splitScrollEnabled,
   viewMode,
   editorRef,
   previewRef,
-}) {
+}: UseSplitScrollSyncOptions): void {
   let isSyncingScroll = false;
 
   watchEffect((onCleanup) => {
@@ -24,7 +34,7 @@ export function useSplitScrollSync({
       });
     };
 
-    const syncToPreview = (ratio) => {
+    const syncToPreview = (ratio: number) => {
       if (isSyncingScroll) {
         return;
       }
@@ -34,7 +44,7 @@ export function useSplitScrollSync({
       releaseSyncLock();
     };
 
-    const syncToEditor = (ratio) => {
+    const syncToEditor = (ratio: number) => {
       if (isSyncingScroll) {
         return;
       }

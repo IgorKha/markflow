@@ -2,33 +2,42 @@
   <div ref="editorContainer" class="w-full h-full"></div>
 </template>
 
-<script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from "vue";
+<script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import * as monaco from "monaco-editor";
 import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
-import { createScrollBridge } from "../utils/scrollBridge.js";
+import type { EditorExpose } from "../types/scroll";
+import type { Theme } from "../types/ui";
+import { createScrollBridge } from "../utils/scrollBridge";
 
-self.MonacoEnvironment = {
+const monacoEnvironmentTarget = self as typeof self & {
+  MonacoEnvironment?: {
+    getWorker: () => Worker;
+  };
+};
+
+monacoEnvironmentTarget.MonacoEnvironment = {
   getWorker() {
     return new editorWorker();
   },
 };
 
-const props = defineProps({
-  modelValue: {
-    type: String,
-    default: "",
-  },
-  theme: {
-    type: String,
-    default: "light",
-  },
+interface Props {
+  modelValue?: string;
+  theme?: Theme;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  modelValue: "",
+  theme: "light",
 });
 
-const emit = defineEmits(["update:modelValue"]);
+const emit = defineEmits<{
+  "update:modelValue": [value: string];
+}>();
 
-const editorContainer = ref(null);
-let editor = null;
+const editorContainer = ref<HTMLDivElement | null>(null);
+let editor: monaco.editor.IStandaloneCodeEditor | null = null;
 
 const scrollBridge = createScrollBridge({
   getMetrics: () => {
@@ -64,6 +73,10 @@ const scrollBridge = createScrollBridge({
 const { getScrollRatio, setScrollRatio, onScrollChange } = scrollBridge;
 
 onMounted(() => {
+  if (!editorContainer.value) {
+    return;
+  }
+
   editor = monaco.editor.create(editorContainer.value, {
     value: props.modelValue,
     language: "markdown",
@@ -79,7 +92,7 @@ onMounted(() => {
   });
 
   editor.onDidChangeModelContent(() => {
-    emit("update:modelValue", editor.getValue());
+    emit("update:modelValue", editor?.getValue() ?? "");
   });
 });
 
@@ -105,9 +118,11 @@ onBeforeUnmount(() => {
   editor?.dispose();
 });
 
-defineExpose({
+const exposed: EditorExpose = {
   getScrollRatio,
   setScrollRatio,
   onScrollChange,
-});
+};
+
+defineExpose(exposed);
 </script>

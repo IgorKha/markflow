@@ -1,7 +1,8 @@
 import { onBeforeUnmount, ref } from "vue";
-import { buildShareUrl } from "../utils/share.js";
+import type { Ref } from "vue";
+import { buildShareUrl } from "../utils/share";
 
-async function copyText(text) {
+async function copyText(text: string): Promise<boolean> {
   if (navigator.clipboard?.writeText) {
     try {
       await navigator.clipboard.writeText(text);
@@ -30,9 +31,9 @@ async function copyText(text) {
   return copied;
 }
 
-export function useShareActions(markdownSource) {
+export function useShareActions(markdownSource: Ref<string>) {
   const shareCopied = ref(false);
-  let resetCopiedTimeoutId = null;
+  let resetCopiedTimeoutId: number | null = null;
 
   onBeforeUnmount(() => {
     if (resetCopiedTimeoutId !== null) {
@@ -40,7 +41,7 @@ export function useShareActions(markdownSource) {
     }
   });
 
-  async function onShare() {
+  async function onShare(): Promise<void> {
     try {
       const url = await buildShareUrl(markdownSource.value);
       const copied = await copyText(url);

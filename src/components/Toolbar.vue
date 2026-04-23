@@ -78,7 +78,7 @@
       <ToolbarExportButton
         label="Markdown"
         title="Save as Markdown (.md)"
-        aria-label="Download as Markdown file"
+        ariaLabel="Download as Markdown file"
         compact
         @action="runMobileAction('export-md')"
       />
@@ -86,7 +86,7 @@
       <ToolbarExportButton
         label="HTML"
         title="Export as HTML"
-        aria-label="Export as HTML file"
+        ariaLabel="Export as HTML file"
         compact
         @action="runMobileAction('export-html')"
       />
@@ -94,7 +94,7 @@
       <ToolbarExportButton
         label="PDF"
         title="Export as PDF"
-        aria-label="Export as PDF file"
+        ariaLabel="Export as PDF file"
         accent
         compact
         @action="runMobileAction('export-pdf')"
@@ -103,7 +103,7 @@
       <ToolbarShareButton
         :copied="shareCopied"
         compact
-        @action="runMobileAction('share')"
+        @action="runMobileShareAction"
       />
     </div>
   </header>
@@ -152,77 +152,81 @@
       <ToolbarExportButton
         label="MD"
         title="Save as Markdown (.md)"
-        aria-label="Download as Markdown file"
+        ariaLabel="Download as Markdown file"
         @action="emit('export-md')"
       />
 
       <ToolbarExportButton
         label="HTML"
         title="Export as HTML"
-        aria-label="Export as HTML file"
+        ariaLabel="Export as HTML file"
         @action="emit('export-html')"
       />
 
       <ToolbarExportButton
         label="PDF"
         title="Export as PDF"
-        aria-label="Export as PDF file"
+        ariaLabel="Export as PDF file"
         accent
         @action="emit('export-pdf')"
       />
 
       <div class="w-px h-4.5 bg-border shrink-0 mx-1" aria-hidden="true" />
 
-      <ToolbarShareButton :copied="shareCopied" @action="emit('share')" />
+      <ToolbarShareButton
+        :copied="shareCopied"
+        @action="runDesktopShareAction"
+      />
 
       <div class="w-px h-4.5 bg-border shrink-0 mx-1" aria-hidden="true" />
     </div>
   </header>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, shallowRef } from "vue";
 import ToolbarBrand from "./toolbar/ToolbarBrand.vue";
 import ToolbarExportButton from "./toolbar/ToolbarExportButton.vue";
 import ToolbarShareButton from "./toolbar/ToolbarShareButton.vue";
 import ToolbarThemeButton from "./toolbar/ToolbarThemeButton.vue";
 import ToolbarViewModeSwitch from "./toolbar/ToolbarViewModeSwitch.vue";
+import type { Theme, ViewMode } from "../types/ui";
 
 const base = import.meta.env.BASE_URL;
 const version = __APP_VERSION__;
 
-const props = defineProps({
-  theme: {
-    type: String,
-    default: "light",
-  },
-  viewMode: {
-    type: String,
-    default: "split",
-  },
-  splitScrollEnabled: {
-    type: Boolean,
-    default: false,
-  },
-  splitScrollAvailable: {
-    type: Boolean,
-    default: false,
-  },
-  shareCopied: {
-    type: Boolean,
-    default: false,
-  },
+interface Props {
+  theme?: Theme;
+  viewMode?: ViewMode;
+  splitScrollEnabled?: boolean;
+  splitScrollAvailable?: boolean;
+  shareCopied?: boolean;
+  onShareAction?: () => void;
+}
+
+type MobileAction =
+  | "toggle-split-scroll"
+  | "export-md"
+  | "export-html"
+  | "export-pdf";
+
+const props = withDefaults(defineProps<Props>(), {
+  theme: "light",
+  viewMode: "split",
+  splitScrollEnabled: false,
+  splitScrollAvailable: false,
+  shareCopied: false,
 });
 
-const emit = defineEmits([
-  "toggle-theme",
-  "change-view-mode",
-  "toggle-split-scroll",
-  "export-md",
-  "export-html",
-  "export-pdf",
-  "share",
-]);
+const emit = defineEmits<{
+  "toggle-theme": [];
+  "change-view-mode": [mode: ViewMode];
+  "toggle-split-scroll": [];
+  "export-md": [];
+  "export-html": [];
+  "export-pdf": [];
+  "share-link": [];
+}>();
 
 const themeLabel = computed(() =>
   props.theme === "dark" ? "Switch to light mode" : "Switch to dark mode",
@@ -246,8 +250,31 @@ const mobileMenuLabel = computed(() =>
     : "Open additional editor actions",
 );
 
-function runMobileAction(action) {
-  emit(action);
+function runMobileAction(action: MobileAction): void {
+  if (action === "toggle-split-scroll") {
+    emit("toggle-split-scroll");
+  } else if (action === "export-md") {
+    emit("export-md");
+  } else if (action === "export-html") {
+    emit("export-html");
+  } else {
+    emit("export-pdf");
+  }
+
   mobileActionsOpen.value = false;
+}
+
+function triggerShareAction(): void {
+  props.onShareAction?.();
+  emit("share-link");
+}
+
+function runMobileShareAction(): void {
+  triggerShareAction();
+  mobileActionsOpen.value = false;
+}
+
+function runDesktopShareAction(): void {
+  triggerShareAction();
 }
 </script>

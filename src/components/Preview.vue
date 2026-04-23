@@ -11,12 +11,15 @@
   </div>
 </template>
 
-<script setup>
-import { ref, watch, nextTick } from "vue";
+<script setup lang="ts">
 import DOMPurify from "dompurify";
-import { renderMarkdown } from "../utils/markdown.js";
-import { createScrollBridge } from "../utils/scrollBridge.js";
+import type { Config as DOMPurifyConfig } from "dompurify";
 import mermaid from "mermaid";
+import { nextTick, ref, watch } from "vue";
+import type { PreviewExpose } from "../types/scroll";
+import type { Theme } from "../types/ui";
+import { renderMarkdown } from "../utils/markdown";
+import { createScrollBridge } from "../utils/scrollBridge";
 
 import "katex/dist/katex.min.css";
 
@@ -25,27 +28,26 @@ import hljsDarkCss from "highlight.js/styles/github-dark.css?inline";
 import mdLightCss from "github-markdown-css/github-markdown-light.css?inline";
 import mdDarkCss from "github-markdown-css/github-markdown-dark.css?inline";
 
-const props = defineProps({
-  markdown: {
-    type: String,
-    default: "",
-  },
-  theme: {
-    type: String,
-    default: "light",
-  },
+interface Props {
+  markdown?: string;
+  theme?: Theme;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  markdown: "",
+  theme: "light",
 });
 
-const previewEl = ref(null);
-const previewContainer = ref(null);
-const renderedHtml = ref("");
+const previewEl = ref<HTMLDivElement | null>(null);
+const previewContainer = ref<HTMLDivElement | null>(null);
+const renderedHtml = ref<string>("");
 let renderToken = 0;
 
-const SANITIZE_OPTIONS = {
+const SANITIZE_OPTIONS: DOMPurifyConfig = {
   USE_PROFILES: { html: true, svg: true, mathMl: true },
 };
 
-function setStyleContent(id, lightCss, darkCss) {
+function setStyleContent(id: string, lightCss: string, darkCss: string): void {
   let style = document.getElementById(id);
   if (!style) {
     style = document.createElement("style");
@@ -55,7 +57,7 @@ function setStyleContent(id, lightCss, darkCss) {
   style.textContent = props.theme === "dark" ? darkCss : lightCss;
 }
 
-function applyThemeStylesheets() {
+function applyThemeStylesheets(): void {
   setStyleContent("hljs-theme", hljsLightCss, hljsDarkCss);
   setStyleContent("markdown-theme", mdLightCss, mdDarkCss);
 }
@@ -69,7 +71,7 @@ mermaid.initialize({
 
 watch(
   () => props.theme,
-  (newTheme) => {
+  (newTheme: Theme) => {
     applyThemeStylesheets();
     mermaid.initialize({
       startOnLoad: false,
@@ -85,7 +87,7 @@ watch(
   { immediate: true },
 );
 
-async function renderAndHighlight() {
+async function renderAndHighlight(): Promise<void> {
   const currentToken = ++renderToken;
   const html = await renderMarkdown(props.markdown);
   const sanitizedHtml = DOMPurify.sanitize(html, SANITIZE_OPTIONS);
@@ -105,12 +107,13 @@ async function renderAndHighlight() {
 
   if (!previewEl.value) return;
 
-  const mermaidBlocks = previewEl.value.querySelectorAll(
+  const mermaidBlocks = previewEl.value.querySelectorAll<HTMLElement>(
     "code.language-mermaid",
   );
+
   for (const block of mermaidBlocks) {
     const pre = block.parentElement;
-    const definition = block.textContent;
+    const definition = block.textContent ?? "";
     const id = `mermaid-${Math.random().toString(36).slice(2)}`;
 
     try {
@@ -166,10 +169,14 @@ const scrollBridge = createScrollBridge({
 
 const { getScrollRatio, setScrollRatio, onScrollChange } = scrollBridge;
 
-defineExpose({
-  previewEl,
+const exposed: PreviewExpose = {
+  get previewEl() {
+    return previewEl.value;
+  },
   getScrollRatio,
   setScrollRatio,
   onScrollChange,
-});
+};
+
+defineExpose(exposed);
 </script>

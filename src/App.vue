@@ -12,13 +12,14 @@
       :split-scroll-enabled="splitScrollEnabled"
       :split-scroll-available="viewMode === 'split'"
       :share-copied="shareCopied"
+      :on-share-action="onShare"
       @toggle-theme="toggleTheme"
       @change-view-mode="onViewModeChange"
       @toggle-split-scroll="onToggleSplitScroll"
       @export-md="onExportMd"
       @export-html="onExportHtml"
       @export-pdf="onExportPdf"
-      @share="onShare"
+      @share-link="onShare"
     />
 
     <main
@@ -78,20 +79,22 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { defineAsyncComponent, ref } from "vue";
+import type { EditorExpose, PreviewExpose } from "./types/scroll";
+import type { ViewMode } from "./types/ui";
 import Toolbar from "./components/Toolbar.vue";
 const Editor = defineAsyncComponent(() => import("./components/Editor.vue"));
 const Preview = defineAsyncComponent(() => import("./components/Preview.vue"));
-import { useMarkdownSource } from "./composables/useMarkdownSource.js";
-import { useShareActions } from "./composables/useShareActions.js";
-import { useSplitLayout } from "./composables/useSplitLayout.js";
-import { useSplitScrollSync } from "./composables/useSplitScrollSync.js";
-import { useTheme } from "./composables/useTheme.js";
-import { exportPDF, exportHTML, exportMarkdown } from "./utils/export.js";
+import { useMarkdownSource } from "./composables/useMarkdownSource";
+import { useShareActions } from "./composables/useShareActions";
+import { useSplitLayout } from "./composables/useSplitLayout";
+import { useSplitScrollSync } from "./composables/useSplitScrollSync";
+import { useTheme } from "./composables/useTheme";
+import { exportPDF, exportHTML, exportMarkdown } from "./utils/export";
 
-const editorRef = ref(null);
-const previewRef = ref(null);
+const editorRef = ref<EditorExpose | null>(null);
+const previewRef = ref<PreviewExpose | null>(null);
 const { theme, toggleTheme } = useTheme();
 const { markdownSource } = useMarkdownSource();
 const { shareCopied, onShare } = useShareActions(markdownSource);
@@ -118,25 +121,25 @@ useSplitScrollSync({
   previewRef,
 });
 
-function onViewModeChange(nextMode) {
+function onViewModeChange(nextMode: ViewMode): void {
   viewMode.value = nextMode;
 }
 
-function onToggleSplitScroll() {
+function onToggleSplitScroll(): void {
   splitScrollEnabled.value = !splitScrollEnabled.value;
 }
 
-async function onExportPdf() {
+async function onExportPdf(): Promise<void> {
   const el = previewRef.value?.previewEl;
   if (!el) return;
   await exportPDF(el, "markflow-export");
 }
 
-function onExportMd() {
+function onExportMd(): void {
   exportMarkdown(markdownSource.value, "markflow-export");
 }
 
-async function onExportHtml() {
+async function onExportHtml(): Promise<void> {
   const el = previewRef.value?.previewEl;
   if (!el) return;
   await exportHTML(el.innerHTML, "markflow-export");

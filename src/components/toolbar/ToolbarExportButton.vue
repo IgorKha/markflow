@@ -27,37 +27,27 @@
   </button>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue";
 
-const props = defineProps({
-  label: {
-    type: String,
-    required: true,
-  },
-  title: {
-    type: String,
-    required: true,
-  },
-  ariaLabel: {
-    type: String,
-    required: true,
-  },
-  accent: {
-    type: Boolean,
-    default: false,
-  },
-  compact: {
-    type: Boolean,
-    default: false,
-  },
-  disabled: {
-    type: Boolean,
-    default: false,
-  },
+interface Props {
+  label: string;
+  title: string;
+  ariaLabel: string;
+  accent?: boolean;
+  compact?: boolean;
+  disabled?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  accent: false,
+  compact: false,
+  disabled: false,
 });
 
-const emit = defineEmits(["action"]);
+const emit = defineEmits<{
+  action: [];
+}>();
 
 const buttonClass = computed(() => {
   const baseClass = props.compact

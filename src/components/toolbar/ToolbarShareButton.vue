@@ -42,21 +42,22 @@
   </button>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue";
 
-const props = defineProps({
-  copied: {
-    type: Boolean,
-    default: false,
-  },
-  compact: {
-    type: Boolean,
-    default: false,
-  },
+interface Props {
+  copied?: boolean;
+  compact?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  copied: false,
+  compact: false,
 });
 
-const emit = defineEmits(["action"]);
+const emit = defineEmits<{
+  action: [];
+}>();
 
 const buttonClass = computed(() => {
   const compactClass =

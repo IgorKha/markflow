@@ -1,13 +1,30 @@
-function clampRatio(ratio) {
+import type {
+  ScrollBridge,
+  ScrollMetrics,
+  ScrollRatioHandler,
+  Unsubscribe,
+} from "../types/scroll";
+
+interface CreateScrollBridgeOptions {
+  getMetrics: () => ScrollMetrics | null;
+  setScrollTop: (nextScrollTop: number) => void;
+  subscribe: (handler: () => void) => Unsubscribe;
+}
+
+function clampRatio(ratio: number): number {
   return Math.min(Math.max(ratio, 0), 1);
 }
 
-function getMaxScrollTop(scrollHeight, viewportSize) {
+function getMaxScrollTop(scrollHeight: number, viewportSize: number): number {
   return Math.max(scrollHeight - viewportSize, 0);
 }
 
-export function createScrollBridge({ getMetrics, setScrollTop, subscribe }) {
-  function getScrollRatio() {
+export function createScrollBridge({
+  getMetrics,
+  setScrollTop,
+  subscribe,
+}: CreateScrollBridgeOptions): ScrollBridge {
+  function getScrollRatio(): number {
     const metrics = getMetrics();
     if (!metrics) {
       return 0;
@@ -25,7 +42,7 @@ export function createScrollBridge({ getMetrics, setScrollTop, subscribe }) {
     return metrics.scrollTop / maxScrollTop;
   }
 
-  function setScrollRatio(ratio) {
+  function setScrollRatio(ratio: number): void {
     const metrics = getMetrics();
     if (!metrics) {
       return;
@@ -39,7 +56,7 @@ export function createScrollBridge({ getMetrics, setScrollTop, subscribe }) {
     setScrollTop(maxScrollTop * clampRatio(ratio));
   }
 
-  function onScrollChange(callback) {
+  function onScrollChange(callback: ScrollRatioHandler): Unsubscribe {
     return subscribe(() => {
       callback(getScrollRatio());
     });

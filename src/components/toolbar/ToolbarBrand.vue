@@ -30,22 +30,19 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue";
 
-const props = defineProps({
-  base: {
-    type: String,
-    default: "",
-  },
-  version: {
-    type: [String, Number],
-    default: "",
-  },
-  compact: {
-    type: Boolean,
-    default: false,
-  },
+interface Props {
+  base?: string;
+  version?: string | number;
+  compact?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  base: "",
+  version: "",
+  compact: false,
 });
 
 const githubPath =

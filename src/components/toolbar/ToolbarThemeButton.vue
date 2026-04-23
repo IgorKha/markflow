@@ -41,25 +41,25 @@
   </button>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue";
+import type { Theme } from "../../types/ui";
 
-const props = defineProps({
-  theme: {
-    type: String,
-    default: "light",
-  },
-  label: {
-    type: String,
-    default: "Toggle theme",
-  },
-  compact: {
-    type: Boolean,
-    default: false,
-  },
+interface Props {
+  theme?: Theme;
+  label?: string;
+  compact?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  theme: "light",
+  label: "Toggle theme",
+  compact: false,
 });
 
-const emit = defineEmits(["toggle"]);
+const emit = defineEmits<{
+  toggle: [];
+}>();
 
 const buttonClass = computed(() =>
   props.compact

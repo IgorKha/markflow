@@ -1,8 +1,8 @@
 import { onMounted, ref, watch } from "vue";
-import { DEFAULT_CONTENT, STORAGE_KEY } from "../constants/editor.js";
-import { readSharedContent } from "../utils/share.js";
+import { DEFAULT_CONTENT, STORAGE_KEY } from "../constants/editor";
+import { readSharedContent } from "../utils/share";
 
-function readInitialMarkdown() {
+function readInitialMarkdown(): string {
   if (typeof window === "undefined") {
     return DEFAULT_CONTENT;
   }
@@ -11,7 +11,7 @@ function readInitialMarkdown() {
 }
 
 export function useMarkdownSource() {
-  const markdownSource = ref(readInitialMarkdown());
+  const markdownSource = ref<string>(readInitialMarkdown());
 
   watch(markdownSource, (value) => {
     if (typeof window === "undefined") {
