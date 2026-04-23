@@ -1,0 +1,183 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    name: Coverage report
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests with coverage
+        run: npm run test:unit:coverage
+
+      - name: Add coverage summary to workflow run
+        if: always()
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          const summaryPath = 'coverage/coverage-summary.json';
+          const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+
+          if (!summaryFile) {
+            process.exit(0);
+          }
+
+          if (!fs.existsSync(summaryPath)) {
+            fs.appendFileSync(
+              summaryFile,
+              [
+                '## Coverage Report',
+                '',
+                'Coverage summary file was not generated.',
+              ].join('\n') + '\n',
+            );
+            process.exit(0);
+          }
+
+          const report = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+          const total = report.total || {};
+
+          const metric = (name) => {
+            const value = total[name] || {};
+            const covered = value.covered ?? 0;
+            const count = value.total ?? 0;
+            const pct = value.pct ?? 0;
+            return `| ${name} | ${pct}% | ${covered}/${count} |`;
+          };
+
+          const lines = [
+            '## Coverage Report',
+            '',
+            `Tag: ${process.env.GITHUB_REF_NAME || 'n/a'}`,
+            '',
+            '| Metric | Percent | Covered/Total |',
+            '|---|---:|---:|',
+            metric('lines'),
+            metric('statements'),
+            metric('functions'),
+            metric('branches'),
+            '',
+            `Full HTML report is attached as workflow artifact: coverage-report-${process.env.GITHUB_REF_NAME || 'n/a'}.`,
+          ];
+
+          fs.appendFileSync(summaryFile, lines.join('\n') + '\n');
+          NODE
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ github.ref_name }}
+          path: coverage
+          if-no-files-found: warn
+          retention-days: 14
+
+  gh-pages:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: coverage
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+
+  docker:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+    needs: coverage
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+          labels: |
+            org.opencontainers.image.title=markflow
+            org.opencontainers.image.description=Online Markdown editor with Mermaid and LaTeX support
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.licenses=GPL-3.0
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          build-args: |
+            APP_VERSION=${{ steps.meta.outputs.version }}
+            VCS_REF=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

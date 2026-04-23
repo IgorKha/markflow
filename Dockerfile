@@ -13,6 +13,8 @@ ARG VCS_REF=local-dev
 LABEL org.opencontainers.image.title="markflow" \
   org.opencontainers.image.description="Online Markdown editor with Mermaid and LaTeX support" \
   org.opencontainers.image.authors="IgorKha https://github.com/IgorKha" \
+  org.opencontainers.image.source="https://github.com/IgorKha/markflow" \
+  org.opencontainers.image.licenses="GPL-3.0" \
   org.opencontainers.image.version="$APP_VERSION" \
   org.opencontainers.image.revision="$VCS_REF"
 
