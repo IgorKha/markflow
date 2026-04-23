@@ -38,8 +38,13 @@ function toggle(e: Event): void {
       <!-- Expand / collapse toggle -->
       <button
         v-if="item.children.length > 0"
-        class="shrink-0 flex items-center justify-center w-4 h-4 rounded transition-transform duration-150 focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1"
-        :class="expanded ? 'rotate-90' : ''"
+        class="shrink-0 inline-flex items-center justify-center w-4 h-4 rounded-md border-0 bg-transparent cursor-pointer transition-[background-color,color,transform] duration-120 focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+        :class="[
+          expanded ? 'rotate-90' : '',
+          item.id === activeId
+            ? 'text-accent hover:bg-accent/10'
+            : 'text-muted hover:bg-btn-hover hover:text-fg',
+        ]"
         :aria-expanded="expanded"
         :aria-label="expanded ? 'Collapse' : 'Expand'"
         tabindex="-1"

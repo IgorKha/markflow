@@ -130,19 +130,21 @@ onUnmounted(() => {
 
           <button
             ref="closeButtonRef"
-            class="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors duration-120 hover:bg-btn-hover hover:text-fg focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-md border-0 bg-transparent text-muted cursor-pointer transition-colors duration-120 hover:bg-btn-hover hover:text-fg focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
             aria-label="Close table of contents"
             @click="emit('close')"
           >
             <svg
-              width="14"
-              height="14"
+              width="15"
+              height="15"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="2.5"
+              stroke-width="2"
               stroke-linecap="round"
+              stroke-linejoin="round"
               aria-hidden="true"
+              focusable="false"
             >
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
