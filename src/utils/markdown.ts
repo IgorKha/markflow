@@ -1,5 +1,6 @@
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
+import rehypeSlug from "rehype-slug";
 import rehypeStringify from "rehype-stringify";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -156,6 +157,7 @@ const processor = unified()
   .use(remarkRehype, { allowDangerousHtml: true })
   .use(rehypeKatex)
   .use(rehypeHighlight, { plainText: ["mermaid"] })
+  .use(rehypeSlug)
   .use(rehypeGitHubAlerts)
   .use(rehypeStringify, { allowDangerousHtml: true });
 

@@ -13,6 +13,7 @@
       :split-scroll-available="viewMode === 'split'"
       :share-copied="shareCopied"
       :on-share-action="onShare"
+      :toc-open="tocOpen"
       @toggle-theme="toggleTheme"
       @change-view-mode="onViewModeChange"
       @toggle-split-scroll="onToggleSplitScroll"
@@ -20,6 +21,7 @@
       @export-html="onExportHtml"
       @export-pdf="onExportPdf"
       @share-link="onShare"
+      @toggle-toc="tocOpen = !tocOpen"
     />
 
     <main
@@ -76,14 +78,24 @@
         <Preview ref="previewRef" :markdown="markdownSource" :theme="theme" />
       </div>
     </main>
+
+    <TocDrawer
+      :open="tocOpen"
+      :items="tocItems"
+      :active-id="tocActiveId"
+      :theme="theme"
+      @close="tocOpen = false"
+      @navigate="onTocNavigate"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent, ref } from "vue";
+import { defineAsyncComponent, ref, shallowRef } from "vue";
 import type { EditorExpose, PreviewExpose } from "./types/scroll";
 import type { ViewMode } from "./types/ui";
 import Toolbar from "./components/Toolbar.vue";
+import TocDrawer from "./components/toc/TocDrawer.vue";
 const Editor = defineAsyncComponent(() => import("./components/Editor.vue"));
 const Preview = defineAsyncComponent(() => import("./components/Preview.vue"));
 import { useMarkdownSource } from "./composables/useMarkdownSource";
@@ -91,6 +103,7 @@ import { useShareActions } from "./composables/useShareActions";
 import { useSplitLayout } from "./composables/useSplitLayout";
 import { useSplitScrollSync } from "./composables/useSplitScrollSync";
 import { useTheme } from "./composables/useTheme";
+import { useToc } from "./composables/useToc";
 import { exportPDF, exportHTML, exportMarkdown } from "./utils/export";
 
 const editorRef = ref<EditorExpose | null>(null);
@@ -98,6 +111,22 @@ const previewRef = ref<PreviewExpose | null>(null);
 const { theme, toggleTheme } = useTheme();
 const { markdownSource } = useMarkdownSource();
 const { shareCopied, onShare } = useShareActions(markdownSource);
+
+const tocOpen = shallowRef(false);
+const {
+  tocItems,
+  activeId: tocActiveId,
+  navigateTo: tocNavigateTo,
+} = useToc({
+  markdown: markdownSource,
+  previewRef,
+  enabled: tocOpen,
+});
+
+function onTocNavigate(id: string): void {
+  tocNavigateTo(id);
+  tocOpen.value = false;
+}
 
 const {
   viewMode,
