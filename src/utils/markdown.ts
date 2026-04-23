@@ -142,9 +142,9 @@ function walkBlockquotes(
     return;
   }
 
-  if (isElement(node)) {
+  if (Array.isArray(node.children)) {
     node.children.forEach((child, childIndex) =>
-      walkBlockquotes(child, visitor, childIndex, node),
+      walkBlockquotes(child, visitor, childIndex, node as HastParent),
     );
   }
 }
