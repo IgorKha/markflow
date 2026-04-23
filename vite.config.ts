@@ -17,7 +17,7 @@ export default defineConfig({
   plugins: [
     vue(),
     tailwindcss(),
-    vueDevTools(),
+    ...(process.env.NODE_ENV === "development" ? [vueDevTools()] : []),
   ],
   resolve: {
     alias: {
