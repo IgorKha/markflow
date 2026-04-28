@@ -11,40 +11,51 @@ export const MAX_SPLIT_RATIO = 80;
 export const SPLIT_KEYBOARD_STEP = 2;
 export const SPLIT_KEYBOARD_STEP_LARGE = 5;
 
-export const DEFAULT_CONTENT = `# Welcome to MarkFlow
+export const DEFAULT_CONTENT = `# MarkFlow Markdown Showcase
 
-A live Markdown editor with **GFM**, LaTeX math, Mermaid diagrams, and code highlighting.
+This starter note demonstrates most Markdown features supported in MarkFlow.
 
----
+## Headings
 
-## Math (KaTeX)
+### H3 Example
+#### H4 Example
 
-Inline: $E = mc^2$
+## Text Formatting
 
-Block:
+- *Italic*, **bold**, ***bold italic***, ~~strikethrough~~
+- Inline code: \`npm run dev\`
+- Superscript with HTML: 2<sup>10</sup>
+- Subscript with HTML: H<sub>2</sub>O
+- Escaped characters: \\*not italic\\* and \\[not a link\](#)
 
-$$
-\\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = \\sqrt{\\pi}
-$$
+## Links, Anchors, and Footnotes
 
-## Code
+- Link: [Example website](https://example.com)
+- Auto-link: https://example.com/docs
+- Jump to [Math section](#math-katex)
+- Footnote reference[^md-note]
 
-\`\`\`javascript
-const greet = (name) => \`Hello, \${name}!\`
-console.log(greet('MarkFlow'))
-\`\`\`
+## Lists
 
-## Mermaid Diagram
+1. Ordered item
+2. Ordered item with nested bullets
+   - Nested bullet A
+   - Nested bullet B
+3. Third item
 
-\`\`\`mermaid
-flowchart LR
-  A[Write Markdown] --> B{Preview}
-  B --> C[Export PDF]
-  B --> D[Export HTML]
-\`\`\`
+- [x] Task done
+- [ ] Task pending
+- [ ] Task with \`inline code\`
+
+## Blockquotes
+
+> Markdown can also express quoted text.
+>
+> > Nested quote level two.
+>
+> Back to level one.
 
 ## Alerts
-
 
 > [!NOTE]
 > Useful information that users should know, even when skimming content.
@@ -61,20 +72,63 @@ flowchart LR
 > [!CAUTION]
 > Advises about risks or negative outcomes of certain actions.
 
-## GFM Tables
+## Horizontal Rule
 
-| Feature       | Status |
-|---------------|--------|
-| GFM           | \u2705     |
-| LaTeX / KaTeX | \u2705     |
-| Mermaid       | \u2705     |
-| PDF Export    | \u2705     |
-| HTML Export   | \u2705     |
-| Dark Mode     | \u2705     |
+---
 
-## Task List
+## Math (KaTeX)
 
-- [x] Set up project
-- [x] Markdown pipeline
-- [ ] Deploy to GitHub Pages
+Inline: $E = mc^2$
+
+Block:
+
+$$
+\\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = \\sqrt{\\pi}
+$$
+
+## Code Blocks
+
+\`\`\`ts
+type User = { id: number; name: string };
+
+const greet = (user: User): string => {
+  return \`Hello, \${user.name}!\`;
+};
+
+console.log(greet({ id: 1, name: "MarkFlow" }));
+\`\`\`
+
+\`\`\`diff
+- old title
++ new title
+\`\`\`
+
+## Mermaid Diagram
+
+\`\`\`mermaid
+flowchart LR
+  A[Write Markdown] --> B{Preview}
+  B --> C[Export PDF]
+  B --> D[Export HTML]
+\`\`\`
+
+## GFM Table
+
+| Feature | Support | Notes |
+|:--|:--:|--:|
+| GFM | Yes | Core syntax |
+| KaTeX | Yes | Inline and block math |
+| Mermaid | Yes | Rendered in preview |
+| Alerts | Yes | GitHub callout style |
+
+## Inline HTML
+
+<details>
+  <summary>Collapsible section</summary>
+
+You can mix HTML in Markdown when you need richer layout.
+
+</details>
+
+[^md-note]: Footnotes are part of GFM and useful for references.
 `;

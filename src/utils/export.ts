@@ -63,6 +63,13 @@ export async function exportPDF(
   ${inlineStyles}
   ${linkedStyles}
   <style>
+    html,
+    body,
+    #app {
+      height: auto !important;
+      overflow: auto !important;
+    }
+
     body {
       max-width: 860px;
       margin: 40px auto;
@@ -119,6 +126,13 @@ export async function exportHTML(
   ${inlineStyles}
   ${linkedStyles}
   <style>
+    html,
+    body,
+    #app {
+      height: auto !important;
+      overflow: auto !important;
+    }
+
     body {
       max-width: 860px;
       margin: 40px auto;
