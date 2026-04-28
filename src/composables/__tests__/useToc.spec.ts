@@ -241,7 +241,37 @@ describe("useToc", () => {
     expect(mockDisconnect).toHaveBeenCalled();
   });
 
-  it("navigateTo scrolls to element and sets activeId", async () => {
+  it("navigateTo scrolls preview container and sets activeId", async () => {
+    const { wrapper, previewRef } = buildHarness("# Section", true);
+    await nextTick();
+    vi.advanceTimersByTime(100);
+
+    const container = document.createElement("div");
+    container.scrollTop = 120;
+    const scrollTo = vi.fn();
+    container.scrollTo = scrollTo;
+    container.getBoundingClientRect = vi.fn(() => ({ top: 20 } as DOMRect));
+
+    const heading = document.createElement("h1");
+    heading.id = "section";
+    heading.getBoundingClientRect = vi.fn(() => ({ top: 260 } as DOMRect));
+
+    const previewEl = document.createElement("div") as HTMLDivElement;
+    previewEl.appendChild(heading);
+    container.appendChild(previewEl);
+
+    previewRef.value = makeFakePreviewExpose(previewEl);
+
+    (wrapper.vm as { navigateTo: (id: string) => void }).navigateTo("section");
+
+    expect(scrollTo).toHaveBeenCalledWith({
+      top: 360,
+      behavior: "smooth",
+    });
+    expect((wrapper.vm as { activeId: string }).activeId).toBe("section");
+  });
+
+  it("navigateTo falls back to element scrollIntoView when container is unavailable", async () => {
     const { wrapper, previewRef } = buildHarness("# Section", true);
     await nextTick();
     vi.advanceTimersByTime(100);

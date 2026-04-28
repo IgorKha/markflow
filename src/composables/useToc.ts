@@ -58,6 +58,10 @@ interface UseTocOptions {
   enabled: Ref<boolean>;
 }
 
+function getPreviewScrollContainer(previewEl: HTMLElement): HTMLElement | null {
+  return previewEl.parentElement;
+}
+
 export function useToc({
   markdown,
   previewRef,
@@ -162,7 +166,20 @@ export function useToc({
         : id.replace(/(["\\#%&'()*+,./:;<=>?@[\]^`{|}~!$])/g, "\\$1");
     const target = previewEl.querySelector<HTMLElement>(`#${escaped}`);
     if (!target) return;
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    const scrollContainer = getPreviewScrollContainer(previewEl);
+    if (scrollContainer) {
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const nextTop = scrollContainer.scrollTop + (targetRect.top - containerRect.top);
+      scrollContainer.scrollTo({
+        top: Math.max(nextTop, 0),
+        behavior: "smooth",
+      });
+    } else {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
     activeId.value = id;
   }
 

@@ -5,7 +5,7 @@
   >
     <div
       ref="previewEl"
-      class="preview-content w-full max-w-198.5 mx-auto bg-transparent text-fg markdown-body"
+      class="preview-content max-w-198.5 mx-auto bg-transparent text-fg markdown-body"
       v-html="renderedHtml"
     ></div>
   </div>
