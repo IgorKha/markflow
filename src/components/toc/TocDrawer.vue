@@ -125,7 +125,7 @@ onUnmounted(() => {
               <line x1="3" y1="18" x2="13" y2="18" />
               <polyline points="20 9 17 12 20 15" />
             </svg>
-            <h2 class="text-sm font-semibold text-fg">Content</h2>
+            <h2 class="text-sm font-semibold text-fg">Outline</h2>
           </div>
 
           <button
