@@ -1,5 +1,8 @@
 export const STORAGE_KEY = "markflow_content";
 export const SPLIT_RATIO_STORAGE_KEY = "markflow_split_ratio";
+export const THEME_STORAGE_KEY = "markflow_theme";
+export const VIEW_MODE_STORAGE_KEY = "markflow_view_mode";
+export const SPLIT_SCROLL_ENABLED_STORAGE_KEY = "markflow_split_scroll_enabled";
 
 export const DEFAULT_SPLIT_RATIO = 50;
 export const MIN_SPLIT_RATIO = 20;

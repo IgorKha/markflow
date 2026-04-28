@@ -4,9 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   MAX_SPLIT_RATIO,
   MIN_SPLIT_RATIO,
+  SPLIT_SCROLL_ENABLED_STORAGE_KEY,
   SPLIT_KEYBOARD_STEP,
   SPLIT_KEYBOARD_STEP_LARGE,
   SPLIT_RATIO_STORAGE_KEY,
+  VIEW_MODE_STORAGE_KEY,
 } from "../../constants/editor";
 import { useSplitLayout } from "../useSplitLayout";
 
@@ -100,6 +102,31 @@ describe("useSplitLayout", () => {
     expect((wrapper.vm as { splitRatio: number }).splitRatio).toBe(MAX_SPLIT_RATIO);
   });
 
+  it("loads persisted view mode and split-scroll state", async () => {
+    window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, "preview");
+    window.localStorage.setItem(SPLIT_SCROLL_ENABLED_STORAGE_KEY, "true");
+
+    const wrapper = mount(Harness);
+    await nextTick();
+
+    const vm = wrapper.vm as {
+      viewMode: "editor" | "split" | "preview";
+      splitScrollEnabled: boolean;
+    };
+
+    expect(vm.viewMode).toBe("preview");
+    expect(vm.splitScrollEnabled).toBe(true);
+  });
+
+  it("falls back to defaults for invalid persisted view mode", async () => {
+    window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, "invalid");
+
+    const wrapper = mount(Harness);
+    await nextTick();
+
+    expect((wrapper.vm as { viewMode: "editor" | "split" | "preview" }).viewMode).toBe("split");
+  });
+
   it("supports keyboard resizing in wide layout", async () => {
     const wrapper = mount(Harness);
     await nextTick();
@@ -167,6 +194,25 @@ describe("useSplitLayout", () => {
     await nextTick();
 
     expect(window.localStorage.getItem(SPLIT_RATIO_STORAGE_KEY)).toBe("52.00");
+  });
+
+  it("persists view mode and split-scroll changes to storage", async () => {
+    const wrapper = mount(Harness);
+    await nextTick();
+
+    const vm = wrapper.vm as {
+      viewMode: "editor" | "split" | "preview";
+      splitScrollEnabled: boolean;
+    };
+
+    vm.viewMode = "editor";
+    vm.splitScrollEnabled = true;
+    await nextTick();
+
+    expect(window.localStorage.getItem(VIEW_MODE_STORAGE_KEY)).toBe("editor");
+    expect(window.localStorage.getItem(SPLIT_SCROLL_ENABLED_STORAGE_KEY)).toBe(
+      "true",
+    );
   });
 
   it("supports pointer dragging and restores body styles after pointer up", async () => {

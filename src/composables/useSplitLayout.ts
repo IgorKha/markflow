@@ -4,9 +4,11 @@ import {
   DEFAULT_SPLIT_RATIO,
   MAX_SPLIT_RATIO,
   MIN_SPLIT_RATIO,
+  SPLIT_SCROLL_ENABLED_STORAGE_KEY,
   SPLIT_KEYBOARD_STEP,
   SPLIT_KEYBOARD_STEP_LARGE,
   SPLIT_RATIO_STORAGE_KEY,
+  VIEW_MODE_STORAGE_KEY,
 } from "../constants/editor";
 import type { ViewMode } from "../types/ui";
 
@@ -32,9 +34,34 @@ function loadSplitRatio(): number {
   return clampSplitRatio(raw);
 }
 
+function loadViewMode(): ViewMode {
+  if (typeof window === "undefined") {
+    return "split";
+  }
+
+  const storedValue = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+  if (
+    storedValue === "editor"
+    || storedValue === "split"
+    || storedValue === "preview"
+  ) {
+    return storedValue;
+  }
+
+  return "split";
+}
+
+function loadSplitScrollEnabled(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.localStorage.getItem(SPLIT_SCROLL_ENABLED_STORAGE_KEY) === "true";
+}
+
 export function useSplitLayout() {
-  const viewMode = ref<ViewMode>("split");
-  const splitScrollEnabled = ref(false);
+  const viewMode = ref<ViewMode>(loadViewMode());
+  const splitScrollEnabled = ref(loadSplitScrollEnabled());
   const splitContainerRef = ref<HTMLElement | null>(null);
 
   const mediaQuery =
@@ -183,6 +210,25 @@ export function useSplitLayout() {
     }
 
     window.localStorage.setItem(SPLIT_RATIO_STORAGE_KEY, value.toFixed(2));
+  });
+
+  watch(viewMode, (mode) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, mode);
+  });
+
+  watch(splitScrollEnabled, (enabled) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(
+      SPLIT_SCROLL_ENABLED_STORAGE_KEY,
+      String(enabled),
+    );
   });
 
   watch(viewMode, (mode) => {

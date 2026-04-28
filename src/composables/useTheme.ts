@@ -1,4 +1,5 @@
 import { ref, watch } from "vue";
+import { THEME_STORAGE_KEY } from "../constants/editor";
 import type { Theme } from "../types/ui";
 
 const DARK_THEME_MEDIA_QUERY = "(prefers-color-scheme: dark)";
@@ -8,7 +9,25 @@ const FALLBACK_THEME_COLORS: Record<Theme, string> = {
   dark: "#111113",
 };
 
+function readStoredTheme(): Theme | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const storedValue = window.localStorage.getItem(THEME_STORAGE_KEY);
+  if (storedValue === "light" || storedValue === "dark") {
+    return storedValue;
+  }
+
+  return null;
+}
+
 function getInitialTheme(): Theme {
+  const storedTheme = readStoredTheme();
+  if (storedTheme) {
+    return storedTheme;
+  }
+
   if (typeof window === "undefined") {
     return "light";
   }
@@ -59,6 +78,10 @@ export function useTheme() {
   watch(
     theme,
     (value) => {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(THEME_STORAGE_KEY, value);
+      }
+
       applyThemeColorMeta(value);
     },
     { immediate: true, flush: "post" },

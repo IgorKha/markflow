@@ -1,6 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { defineComponent, nextTick } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { THEME_STORAGE_KEY } from "../../constants/editor";
 import { useTheme } from "../useTheme";
 
 const Harness = defineComponent({
@@ -28,10 +29,21 @@ function mockMatchMedia(matches: boolean): void {
 
 describe("useTheme", () => {
   beforeEach(() => {
+    window.localStorage.clear();
     document.head.querySelector('meta[name="theme-color"]')?.remove();
     document.documentElement.style.colorScheme = "";
     document.body.innerHTML = "";
     vi.clearAllMocks();
+  });
+
+  it("restores theme from storage before checking system preference", async () => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, "dark");
+    mockMatchMedia(false);
+
+    const wrapper = mount(Harness);
+    await nextTick();
+
+    expect((wrapper.vm as { theme: string }).theme).toBe("dark");
   });
 
   it("uses system preference as initial theme and applies meta color", async () => {
@@ -78,5 +90,19 @@ describe("useTheme", () => {
     await nextTick();
 
     expect((wrapper.vm as { theme: string }).theme).toBe("dark");
+  });
+
+  it("persists toggled theme to storage", async () => {
+    mockMatchMedia(false);
+
+    const wrapper = mount(Harness);
+    await nextTick();
+
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("light");
+
+    (wrapper.vm as { toggleTheme: () => void }).toggleTheme();
+    await nextTick();
+
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("dark");
   });
 });
