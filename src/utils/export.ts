@@ -42,6 +42,17 @@ function downloadTextFile(
   URL.revokeObjectURL(objectUrl);
 }
 
+function expandCollapsibleSections(htmlContent: string): string {
+  const container = document.createElement("div");
+  container.innerHTML = htmlContent;
+
+  container.querySelectorAll("details").forEach((detailsEl) => {
+    detailsEl.setAttribute("open", "");
+  });
+
+  return container.innerHTML;
+}
+
 /**
  * Export the preview element as a PDF file with selectable text.
  * Opens a styled print window and triggers the browser's native print dialog,
@@ -53,6 +64,7 @@ export async function exportPDF(
 ): Promise<void> {
   const inlineStyles = collectInlineStyles();
   const linkedStyles = await collectLinkedStyles(() => "");
+  const expandedHtmlContent = expandCollapsibleSections(el.innerHTML);
 
   const doc = `<!DOCTYPE html>
 <html lang="en">
@@ -88,7 +100,7 @@ export async function exportPDF(
   </style>
 </head>
 <body class="markdown-body">
-${el.innerHTML}
+${expandedHtmlContent}
 <script>window.onload = function () { window.focus(); window.print(); }<\/script>
 </body>
 </html>`;
@@ -116,6 +128,7 @@ export async function exportHTML(
   const linkedStyles = await collectLinkedStyles(
     (href) => `<!-- could not inline stylesheet: ${href} -->`,
   );
+  const expandedHtmlContent = expandCollapsibleSections(htmlContent);
 
   const doc = `<!DOCTYPE html>
 <html lang="en">
@@ -144,7 +157,7 @@ export async function exportHTML(
   </style>
 </head>
 <body class="markdown-body">
-${htmlContent}
+${expandedHtmlContent}
 </body>
 </html>`;
 

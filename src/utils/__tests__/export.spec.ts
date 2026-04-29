@@ -53,7 +53,10 @@ describe("export utils", () => {
       .spyOn(HTMLAnchorElement.prototype, "click")
       .mockImplementation(() => { });
 
-    await exportHTML("<h1>Hello</h1>", "share-doc");
+    await exportHTML(
+      "<h1>Hello</h1><details><summary>Collapsible section</summary><p>Body</p></details>",
+      "share-doc",
+    );
 
     expect(createObjectURLSpy).toHaveBeenCalledTimes(1);
     expect(clickSpy).toHaveBeenCalledTimes(1);
@@ -62,6 +65,9 @@ describe("export utils", () => {
 
     const html = await downloadedBlob!.text();
     expect(html).toContain("<h1>Hello</h1>");
+    expect(html).toContain(
+      '<details open=""><summary>Collapsible section</summary><p>Body</p></details>',
+    );
     expect(html).toContain(inlineStyle.outerHTML);
     expect(html).toContain("<style>.linked { color: red; }</style>");
     expect(html).toContain("<!-- could not inline stylesheet: https://cdn.example.com/fail.css -->");
@@ -103,7 +109,8 @@ describe("export utils", () => {
     );
 
     const previewEl = document.createElement("div");
-    previewEl.innerHTML = "<article><h2>Printable</h2></article>";
+    previewEl.innerHTML =
+      "<article><h2>Printable</h2></article><details><summary>Collapsible section</summary><p>Hidden text</p></details>";
 
     const writeSpy = vi.fn();
     const openSpy = vi.spyOn(window, "open").mockImplementation(
@@ -125,6 +132,9 @@ describe("export utils", () => {
     const printedHtml = writeSpy.mock.calls[0]?.[0] as string;
     expect(printedHtml).toContain("<title>report</title>");
     expect(printedHtml).toContain("<article><h2>Printable</h2></article>");
+    expect(printedHtml).toContain(
+      '<details open=""><summary>Collapsible section</summary><p>Hidden text</p></details>',
+    );
     expect(printedHtml).toContain(inlineStyle.outerHTML);
     expect(printedHtml).toContain("<style>.remote { color: black; }</style>");
   });
