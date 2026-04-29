@@ -1,11 +1,12 @@
 <template>
   <div
     ref="previewContainer"
-    class="w-full h-full overflow-y-auto px-4 py-6 sm:px-10 sm:py-12 markdown-body text-fg justify-center flex"
+    class="w-full h-full overflow-y-auto px-4 py-6 sm:px-10 sm:py-12 markdown-body text-fg"
+    @click="onPreviewClick"
   >
     <div
       ref="previewEl"
-      class="preview-content max-w-198.5 mx-auto bg-transparent text-fg markdown-body"
+      class="preview-content w-full max-w-198.5 mx-auto bg-transparent text-fg markdown-body"
       v-html="renderedHtml"
     ></div>
   </div>
@@ -15,7 +16,7 @@
 import DOMPurify from "dompurify";
 import type { Config as DOMPurifyConfig } from "dompurify";
 import mermaid from "mermaid";
-import { nextTick, ref, watch } from "vue";
+import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import type { PreviewExpose } from "../types/scroll";
 import type { Theme } from "../types/ui";
 import { renderMarkdown } from "../utils/markdown";
@@ -46,6 +47,121 @@ let renderToken = 0;
 const SANITIZE_OPTIONS: DOMPurifyConfig = {
   USE_PROFILES: { html: true, svg: true, mathMl: true },
 };
+
+const SHARE_HASH_PREFIX = "s=";
+let pendingHashId: string | null = null;
+
+function getHashTargetId(hash: string): string | null {
+  const raw = hash.startsWith("#") ? hash.slice(1) : hash;
+  if (!raw || raw.startsWith(SHARE_HASH_PREFIX)) {
+    return null;
+  }
+
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+function queryTargetById(id: string): HTMLElement | null {
+  if (!previewEl.value) {
+    return null;
+  }
+
+  const escaped =
+    typeof CSS !== "undefined" && typeof CSS.escape === "function"
+      ? CSS.escape(id)
+      : id.replace(/(["\\#%&'()*+,./:;<=>?@[\]^`{|}~!$])/g, "\\$1");
+
+  return previewEl.value.querySelector<HTMLElement>(`#${escaped}`);
+}
+
+function scrollPreviewToId(id: string, behavior: ScrollBehavior): boolean {
+  const container = previewContainer.value;
+  if (!container) {
+    return false;
+  }
+
+  const target = queryTargetById(id);
+  if (!target) {
+    return false;
+  }
+
+  const containerRect = container.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+  const nextTop = container.scrollTop + (targetRect.top - containerRect.top);
+
+  container.scrollTo({
+    top: Math.max(nextTop, 0),
+    behavior,
+  });
+
+  return true;
+}
+
+function keepWindowAtTop(): void {
+  if (window.scrollX === 0 && window.scrollY === 0) {
+    return;
+  }
+
+  window.scrollTo({
+    left: 0,
+    top: 0,
+    behavior: "auto",
+  });
+}
+
+function queueHashSyncFromLocation(): void {
+  pendingHashId = getHashTargetId(window.location.hash);
+}
+
+function flushPendingHashSync(behavior: ScrollBehavior): void {
+  if (!pendingHashId) {
+    return;
+  }
+
+  if (scrollPreviewToId(pendingHashId, behavior)) {
+    keepWindowAtTop();
+    pendingHashId = null;
+  }
+}
+
+function onHashChange(): void {
+  queueHashSyncFromLocation();
+  flushPendingHashSync("smooth");
+}
+
+function onPreviewClick(event: MouseEvent): void {
+  const origin = event.target;
+  if (!(origin instanceof Element)) {
+    return;
+  }
+
+  const link = origin.closest("a[href^='#']");
+  if (!(link instanceof HTMLAnchorElement)) {
+    return;
+  }
+
+  const href = link.getAttribute("href") ?? "";
+  const id = getHashTargetId(href);
+  if (!id) {
+    return;
+  }
+
+  const didScroll = scrollPreviewToId(id, "smooth");
+  if (!didScroll) {
+    return;
+  }
+
+  event.preventDefault();
+  keepWindowAtTop();
+
+  const nextHash = `#${encodeURIComponent(id)}`;
+  if (window.location.hash !== nextHash) {
+    window.history.replaceState(null, "", nextHash);
+  }
+}
 
 function setStyleContent(id: string, lightCss: string, darkCss: string): void {
   let style = document.getElementById(id);
@@ -131,7 +247,19 @@ async function renderAndHighlight(): Promise<void> {
       console.warn("Mermaid render error:", err);
     }
   }
+
+  flushPendingHashSync("auto");
 }
+
+onMounted(() => {
+  queueHashSyncFromLocation();
+  flushPendingHashSync("auto");
+  window.addEventListener("hashchange", onHashChange);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("hashchange", onHashChange);
+});
 
 const scrollBridge = createScrollBridge({
   getMetrics: () => {
